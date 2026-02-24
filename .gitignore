@@ -1,0 +1,42 @@
+# Fehres
+
+# Dependencies
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+SRC/.env
+Docker/env/.env*
+
+# Lock files
+*.lock
+uv.lock
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+
+# User data and uploads
+SRC/Assets/Files/*/
+SRC/Assets/Database/
+
+# BM25 sparse index persistence (generated at runtime)
+SRC/data/
+
+# OS
+.DS_Store
+Thumbs.db
