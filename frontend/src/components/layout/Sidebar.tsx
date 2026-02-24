@@ -3,7 +3,6 @@ import { NavLink } from "react-router-dom";
 import {
   ChatBubbleLeftRightIcon,
   ChartBarIcon,
-  Cog6ToothIcon,
   GlobeAltIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
@@ -17,7 +16,6 @@ const navigation = [
   { name: "Library Docs", href: "/library-docs", icon: GlobeAltIcon },
   { name: "Search", href: "/search", icon: MagnifyingGlassIcon },
   { name: "Index Info", href: "/index", icon: ChartBarIcon },
-  { name: "Settings", href: "/settings", icon: Cog6ToothIcon },
 ];
 
 export function Sidebar() {
