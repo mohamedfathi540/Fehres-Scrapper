@@ -8,6 +8,7 @@ import os
 from typing import List
 from Stores.LLM.LLMEnums import DocumentTypeEnum
 from Helpers.Config import get_settings
+from Utils.language_detect import detect_query_language
 import json
 
 
@@ -195,7 +196,10 @@ class NLPController (basecontroller) :
             return answer, full_prompt ,chat_history
 
         #step 2 : constract LLM prompt (include source metadata when available)
-        system_prompt = self.template_parser.get("rag", "system_prompt")
+        # Detect user query language so we can explicitly tell the LLM which language to respond in
+        response_language = detect_query_language(query)
+
+        system_prompt = self.template_parser.get("rag", "system_prompt", {"response_language": response_language})
         doc_lines = []
         for idx, doc in enumerate(retrieved_documents):
             # Use full chunk text for RAG; do not truncate (process_text cuts to ~768 chars and can drop the relevant part)
@@ -219,8 +223,8 @@ class NLPController (basecontroller) :
         doc_count_notice = self.template_parser.get(
             "rag", "doc_count_notice", {"num_docs": num_docs}
         )
-        query_first = self.template_parser.get("rag", "query_first_prompt", {"query": query})
-        footer_prompt = self.template_parser.get("rag", "footer_prompt", {})
+        query_first = self.template_parser.get("rag", "query_first_prompt", {"query": query, "response_language": response_language})
+        footer_prompt = self.template_parser.get("rag", "footer_prompt", {"response_language": response_language})
 
         # Build chat_history for LLM: system + previous conversation (so follow-ups like "Can you give me an example?" have context)
         chat_history = [
