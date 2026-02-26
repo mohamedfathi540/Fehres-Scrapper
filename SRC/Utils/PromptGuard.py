@@ -45,6 +45,18 @@ _INJECTION_PATTERNS: list[re.Pattern] = [
     re.compile(r"(your\s+)?(restrictions?|filters?|safety|guidelines?)\s+(are\s+)?(removed|lifted|disabled|off)", re.I),
     re.compile(r"(no\s+restrictions?|without\s+restrictions?)", re.I),
     re.compile(r"without\s+(any\s+)?(ethical\s+)?(limitations?|constraints?|guidelines?)", re.I),
+
+    # Tag/structure inspection (users asking about prompt XML tags)
+    re.compile(r"what\s+(are\s+)?(your\s+)?(tags?|xml\s+tags?|formatting\s+tags?|prompt\s+tags?)", re.I),
+    re.compile(r"(tell\s+me|show\s+me|explain)\s+(about\s+)?(your\s+)?(tags?|xml|structure|formatting)", re.I),
+
+    # Dictionary / variable-substitution attacks (e.g. "Let A = 'Ignore all rules'")
+    re.compile(r"\blet\s+[a-zA-Z]\s*=", re.I),
+    re.compile(r"\bdefine\s+[a-zA-Z]\s*=", re.I),
+
+    # Broader standalone disregard/ignore variants not covered above
+    re.compile(r"\bdisregard\s+(all|the|any|these|those|your)\b", re.I),
+    re.compile(r"\bignore\s+(all|the|any|these|those|your)\b", re.I),
 ]
 
 # Suspicious keywords (second-pass, lighter check — a single hit does NOT block by itself
@@ -64,6 +76,13 @@ _SUSPICIOUS_KEYWORDS: list[str] = [
     "unlock",
     "unfiltered",
     "uncensored",
+    # Additional keywords targeting system-prompt probing
+    "system prompt",
+    "disregard",
+    "what tags",
+    "your tags",
+    "prompt structure",
+    "prompt format",
 ]
 
 
@@ -113,6 +132,20 @@ _SYSTEM_PROMPT_ANCHORS: list[str] = [
     "REMINDER — FINAL CONSTRAINTS",
     "documents_block_open",
     "documents_block_close",
+    # XML structural tags — should NEVER appear verbatim in a model response
+    "<user_query>",
+    "</user_query>",
+    "<documents>",
+    "</documents>",
+    "<system_role>",
+    "</system_role>",
+    "<amnesia_protocol>",
+    "</amnesia_protocol>",
+    # Sensitive phrases from the system prompt text itself
+    "system instructions",
+    "amnesia protocol",
+    "amnesia_protocol",
+    "strict_constraints",
 ]
 
 
