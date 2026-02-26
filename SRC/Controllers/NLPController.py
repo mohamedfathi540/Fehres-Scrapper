@@ -9,6 +9,7 @@ from typing import List
 from Stores.LLM.LLMEnums import DocumentTypeEnum
 from Helpers.Config import get_settings
 from Utils.language_detect import detect_query_language
+from Utils.PromptGuard import PromptGuard
 import json
 
 
@@ -176,6 +177,12 @@ class NLPController (basecontroller) :
         answer, full_prompt, chat_history = None, None, None
         request_chat_history = request_chat_history or []
 
+        # --- Input guard: block prompt-injection attempts before anything else ---
+        input_safe, input_reason = PromptGuard.validate_input(query)
+        if not input_safe:
+            self.logger.warning(f"PromptGuard blocked input: {input_reason}")
+            return "I can only help with questions about the provided documents.", None, None
+
         # Step 1: retrieval — use expanded query for follow-ups (e.g. "Can you give me an example?" + last user msg)
         search_query = query
         if request_chat_history and len(query.strip()) < 80:
@@ -217,7 +224,10 @@ class NLPController (basecontroller) :
             doc_lines.append(
                 self.template_parser.get("rag", "document_prompt", {"doc_num": idx + 1, "chunk_text": chunk_text})
             )
-        document_prompt = "\n".join(doc_lines)
+        # Wrap documents in a clear data-only block so the LLM knows they are sources, not instructions
+        docs_open = self.template_parser.get("rag", "documents_block_open", {"num_docs": len(retrieved_documents)})
+        docs_close = self.template_parser.get("rag", "documents_block_close", {})
+        document_prompt = docs_open + "\n" + "\n".join(doc_lines) + "\n" + docs_close
 
         num_docs = len(retrieved_documents)
         doc_count_notice = self.template_parser.get(
@@ -260,12 +270,20 @@ class NLPController (basecontroller) :
             footer_prompt,
         ])
 
-        # Use slightly higher temperature for RAG; do not truncate prompt (we send 10 full docs)
+        # Low temperature (0.1) makes the model deterministic and tightly adherent to the system prompt,
+        # which reduces the chance of creative jailbreaks succeeding.
         answer = self.genration_client.genrate_text(
             prompt=full_prompt,
             chat_history=chat_history,
-            temperature=0.4,
+            temperature=0.1,
             max_prompt_characters=150_000,
         )
+
+        # --- Output guard: suppress response if system-prompt content is leaked ---
+        if answer:
+            output_safe, output_reason = PromptGuard.validate_output(answer)
+            if not output_safe:
+                self.logger.warning(f"PromptGuard blocked output: {output_reason}")
+                return "I can only help with questions about the provided documents.", full_prompt, chat_history
 
         return answer, full_prompt, chat_history
