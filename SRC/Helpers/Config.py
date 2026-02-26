@@ -32,6 +32,7 @@ class settings (BaseSettings):
  
     OPENAI_API_KEY : Optional[str] = None
     OPENAI_BASE_URL : Optional[str] = None
+    OPENAI_REQUEST_TIMEOUT : float = 120.0
     COHERE_API_KEY : Optional[str] = None
     GEMINI_API_KEY : Optional[str] = None
     GEMINI_API_VERSION : str = "v1"

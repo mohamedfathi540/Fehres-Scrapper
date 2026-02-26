@@ -13,7 +13,8 @@ class LLMProviderFactory :
                 base_url = self.config.OPENAI_BASE_URL,
                 default_input_max_characters = self.config.INPUT_DEFUALT_MAX_CHARACTERS,
                 default_genrated_max_output_tokens = self.config.GENRATED_DEFUALT_MAX_OUTPUT_TOKENS,
-                default_genration_temperature = self.config.GENRATION_DEFUALT_TEMPERATURE
+                default_genration_temperature = self.config.GENRATION_DEFUALT_TEMPERATURE,
+                request_timeout = getattr(self.config, "OPENAI_REQUEST_TIMEOUT", 120.0),
             )
 
         if provider == LLMEnums.COHERE.value :

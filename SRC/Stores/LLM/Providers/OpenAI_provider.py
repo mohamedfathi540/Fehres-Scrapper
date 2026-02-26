@@ -1,6 +1,8 @@
 from ..LLMInterface import LLMInterface
 from ..LLMEnums import LLMEnums , OpenAIEnum
 from openai import OpenAI
+import openai
+import httpx
 import logging
 from typing import List, Union
 
@@ -10,13 +12,15 @@ class OpenAIProvider(LLMInterface) :
     def __init__(self,api_key :str , base_url :str = None , 
                   default_input_max_characters : int =1000,
                   default_genrated_max_output_tokens : int =1000,
-                  default_genration_temperature : float =0.1) :
+                  default_genration_temperature : float =0.1,
+                  request_timeout : float = 120.0) :
 
         self.api_key = api_key
         self.base_url = base_url 
         self.default_input_max_characters = default_input_max_characters
         self.default_genrated_max_output_tokens = default_genrated_max_output_tokens
         self.default_genration_temperature = default_genration_temperature
+        self.request_timeout = request_timeout
 
 
         self.genration_model_id = None        
@@ -24,8 +28,11 @@ class OpenAIProvider(LLMInterface) :
         self.embedding_model_id = None
         self.embedding_size = None
 
-        self.client = OpenAI(api_key=self.api_key, 
-                            base_url = self.base_url if self.base_url and len(self.base_url) else None)
+        self.client = OpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url if self.base_url and len(self.base_url) else None,
+            timeout=httpx.Timeout(self.request_timeout, connect=10.0),
+        )
 
         self.enums = OpenAIEnum
         self.logger = logging.getLogger(__name__)
@@ -62,11 +69,22 @@ class OpenAIProvider(LLMInterface) :
                         else self.process_text(prompt))
         chat_history.append(self.construct_prompt(prompt=final_prompt, role=OpenAIEnum.USER.value))
 
-        response = self.client.chat.completions.create(
-            model=self.genration_model_id,
-            messages=chat_history,
-            max_tokens=max_output_tokens,
-            temperature=temperature )
+        try:
+            response = self.client.chat.completions.create(
+                model=self.genration_model_id,
+                messages=chat_history,
+                max_tokens=max_output_tokens,
+                temperature=temperature,
+            )
+        except openai.APITimeoutError as e:
+            self.logger.error("OpenAI request timed out (base_url=%s): %s", self.base_url, e)
+            return None
+        except openai.APIConnectionError as e:
+            self.logger.error("OpenAI connection error (base_url=%s): %s", self.base_url, e)
+            return None
+        except openai.APIStatusError as e:
+            self.logger.error("OpenAI API error status=%s: %s", e.status_code, e.message)
+            return None
 
         if not response or not response.choices or len(response.choices) == 0 or not response.choices[0].message:
             self.logger.error("Error while generating text using OpenAI")
@@ -87,9 +105,20 @@ class OpenAIProvider(LLMInterface) :
             self.logger.error("OpenAI embedding model is not initialized")
             return None
 
-        response = self.client.embeddings.create(
-            model=self.embedding_model_id,
-            input=text )
+        try:
+            response = self.client.embeddings.create(
+                model=self.embedding_model_id,
+                input=text,
+            )
+        except openai.APITimeoutError as e:
+            self.logger.error("OpenAI embedding request timed out (base_url=%s): %s", self.base_url, e)
+            return None
+        except openai.APIConnectionError as e:
+            self.logger.error("OpenAI embedding connection error (base_url=%s): %s", self.base_url, e)
+            return None
+        except openai.APIStatusError as e:
+            self.logger.error("OpenAI embedding API error status=%s: %s", e.status_code, e.message)
+            return None
 
         if not response or not response.data or len(response.data) == 0 or not response.data[0].embedding:
             self.logger.error("Error while embedding text using OpenAI")
