@@ -66,6 +66,9 @@ class ScrapingController(basecontroller):
             return True
         return robots_parser.can_fetch(self.settings.SCRAPING_USER_AGENT, url)
     
+    # Shorter timeout used only for sitemap/robots discovery (not full page scraping)
+    SITEMAP_TIMEOUT: int = 30
+
     def discover_pages_from_sitemap(
         self,
         base_url: str,
@@ -110,7 +113,7 @@ class ScrapingController(basecontroller):
                 continue
             visited_sitemaps.add(sitemap_url)
             try:
-                response = self.session.get(sitemap_url, timeout=self.settings.SCRAPING_TIMEOUT)
+                response = self.session.get(sitemap_url, timeout=self.SITEMAP_TIMEOUT)
                 if response.status_code == 200:
                     # Parse XML sitemap
                     root = ET.fromstring(response.content)

@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from Routes import Base
 from Routes import Data
 from Routes import NLP
+from Routes import Health
 from Helpers.Config import get_settings
 from Stores.LLM.LLMProviderFactory import LLMProviderFactory
 from Stores.VectorDB.VectorDBProviderFactory import VectorDBProviderFactory
@@ -81,3 +82,4 @@ async def shutdown_span() :
 app.include_router(Base.base_router)
 app.include_router(Data.data_router)
 app.include_router(NLP.nlp_router)
+app.include_router(Health.health_router)

@@ -512,13 +512,17 @@ async def run_scraping_background(scrape_request: ScrapeRequest, app: FastAPI):
                 template_parser=app.template_parser
             )
             collection_name = nlp_controller.create_collection_name(project_id=project.project_id)
+            logger.info(f"[SCRAPE] Deleting vector collection: {collection_name}")
             _ = await app.vectordb_client.delete_collection(collection_name=collection_name)
-            _ = await chunk_model.delete_chunk_by_project_id(project_id=project.project_id)
+            logger.info(f"[SCRAPE] Deleting chunks for project {project.project_id}")
+            deleted_rows = await chunk_model.delete_chunk_by_project_id(project_id=project.project_id)
+            logger.info(f"[SCRAPE] Deleted {deleted_rows} chunk(s) for project {project.project_id}")
             try:
                 from Stores.Sparse import BM25Index
                 BM25Index.delete_index(project.project_id)
-            except Exception:
-                pass
+                logger.info(f"[SCRAPE] BM25 index deleted for project {project.project_id}")
+            except Exception as bm25_err:
+                logger.warning(f"[SCRAPE] BM25 delete skipped: {bm25_err}")
             _delete_scrape_cache(base_url)
 
         cache = _load_scrape_cache(base_url) if do_reset != 1 else None
@@ -613,6 +617,7 @@ async def run_scraping_background(scrape_request: ScrapeRequest, app: FastAPI):
         # Ensure we have a discovered URL list
         SCRAPE_PROGRESS[base_url]["status"] = "discovering"
         if not cache.get("discovered_urls"):
+            logger.info(f"[SCRAPE] Starting page discovery for {base_url}")
             try:
                 discovered_urls = await run_in_threadpool(
                     scraping_controller.discover_pages,
@@ -621,11 +626,11 @@ async def run_scraping_background(scrape_request: ScrapeRequest, app: FastAPI):
             except Exception as e:
                 import traceback
                 tb = traceback.format_exc()
-                logger.error(f"Error discovering pages: {e}\n{tb}")
+                logger.error(f"[SCRAPE] Error discovering pages: {e}\n{tb}")
                 SCRAPE_PROGRESS[base_url]["status"] = "error"
                 SCRAPE_PROGRESS[base_url]["error"] = f"Failed to discover pages: {e}"
                 return # Stop processing
-            
+            logger.info(f"[SCRAPE] Discovery complete: found {len(discovered_urls)} page(s) for {base_url}")
             cache["discovered_urls"] = discovered_urls
             _save_scrape_cache(
                 base_url,

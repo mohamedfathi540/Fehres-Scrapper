@@ -66,7 +66,6 @@ class ChunkModel (BaseDataModel) :
             async with session.begin() :
                 stmt = delete(dataChunk).where(dataChunk.chunk_project_id == project_id)
                 result = await session.execute(stmt)
-                await session.commit()
         
         return result.rowcount
      
