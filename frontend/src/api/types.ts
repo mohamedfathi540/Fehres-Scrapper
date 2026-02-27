@@ -28,6 +28,24 @@ export interface ScrapeResponse {
     total_pages_scraped: number;
 }
 
+export type ScrapeProgressStatus =
+    | "starting"
+    | "discovering"
+    | "scraping"
+    | "indexing"
+    | "completed"
+    | "cancelled"
+    | "error";
+
+export interface ScrapeProgressResponse {
+    signal: string;
+    status: ScrapeProgressStatus;
+    library_name: string;
+    pages_done: number;
+    pages_total: number;
+    error: string | null;
+}
+
 export interface PushRequest {
     do_reset: number;
     project_name?: string;

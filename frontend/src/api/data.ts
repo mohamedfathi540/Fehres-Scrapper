@@ -1,5 +1,5 @@
 import { apiClient, uploadFileWithProgress } from './client';
-import type { UploadResponse, ProcessRequest, ProcessResponse, ScrapeRequest, ScrapeResponse, LibrariesResponse } from './types';
+import type { UploadResponse, ProcessRequest, ProcessResponse, ScrapeRequest, ScrapeResponse, LibrariesResponse, ScrapeProgressResponse } from './types';
 
 export const uploadFile = async (
     file: File,
@@ -41,6 +41,15 @@ export const scrapeDocumentation = async (
 export const cancelScrapeDocumentation = async (): Promise<{ signal: string; message: string }> => {
     const response = await apiClient.post<{ signal: string; message: string }>(
         `/data/scrape-cancel`
+    );
+    return response.data;
+};
+
+/** Poll real-time progress for a running (or recently finished) scrape job. */
+export const getScrapeProgress = async (base_url: string): Promise<ScrapeProgressResponse> => {
+    const response = await apiClient.get<ScrapeProgressResponse>(
+        `/data/scrape-progress`,
+        { params: { base_url } }
     );
     return response.data;
 };

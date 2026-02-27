@@ -24,6 +24,10 @@ from Models.enums.AssetTypeEnum import assettypeEnum
 
 logger = logging.getLogger("uvicorn.error")
 
+# In-memory scraping progress store keyed by base_url
+# { base_url: { status, library_name, pages_done, pages_total, error } }
+SCRAPE_PROGRESS: dict = {}
+
 # Directory for scrape cache (so chunking can be resumed after frontend timeout)
 SCRAPE_CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "scrape_cache"
 
@@ -471,7 +475,17 @@ async def run_scraping_background(scrape_request: ScrapeRequest, app: FastAPI):
     try:
         settings = get_settings()
         library_name = scrape_request.library_name
-        
+        base_url_key = scrape_request.base_url.strip()
+
+        # Initialise progress entry so frontend can start polling immediately
+        SCRAPE_PROGRESS[base_url_key] = {
+            "status": "starting",
+            "library_name": library_name,
+            "pages_done": 0,
+            "pages_total": 0,
+            "error": None,
+        }
+
         logger.info(f"[SCRAPE] Background task started for library '{library_name}'")
         
         project_model = await projectModel.create_instance(db_client=app.db_client)
@@ -597,6 +611,7 @@ async def run_scraping_background(scrape_request: ScrapeRequest, app: FastAPI):
             return True, inserted
 
         # Ensure we have a discovered URL list
+        SCRAPE_PROGRESS[base_url]["status"] = "discovering"
         if not cache.get("discovered_urls"):
             try:
                 discovered_urls = await run_in_threadpool(
@@ -607,6 +622,8 @@ async def run_scraping_background(scrape_request: ScrapeRequest, app: FastAPI):
                 import traceback
                 tb = traceback.format_exc()
                 logger.error(f"Error discovering pages: {e}\n{tb}")
+                SCRAPE_PROGRESS[base_url]["status"] = "error"
+                SCRAPE_PROGRESS[base_url]["error"] = f"Failed to discover pages: {e}"
                 return # Stop processing
             
             cache["discovered_urls"] = discovered_urls
@@ -621,7 +638,13 @@ async def run_scraping_background(scrape_request: ScrapeRequest, app: FastAPI):
 
         if not discovered_urls:
             logger.error(f"No pages were discovered from {base_url}.")
+            SCRAPE_PROGRESS[base_url]["status"] = "error"
+            SCRAPE_PROGRESS[base_url]["error"] = "No pages discovered from the provided URL."
             return
+
+        # Update total so frontend can display progress bar immediately
+        SCRAPE_PROGRESS[base_url]["pages_total"] = len(discovered_urls)
+        SCRAPE_PROGRESS[base_url]["status"] = "scraping"
 
         processed_urls = set(cache.get("processed_urls", []))
         skipped_urls = set(cache.get("skipped_urls", []))
@@ -771,6 +794,8 @@ async def run_scraping_background(scrape_request: ScrapeRequest, app: FastAPI):
             if not page_data:
                 skipped_urls.add(url)
                 skipped_count += 1
+                # Update progress (count skipped pages too so bar advances)
+                SCRAPE_PROGRESS[base_url]["pages_done"] = len(processed_urls) + skipped_count
                 cache["skipped_urls"] = list(skipped_urls)
                 _save_scrape_cache(
                     base_url,
@@ -787,6 +812,8 @@ async def run_scraping_background(scrape_request: ScrapeRequest, app: FastAPI):
             try:
                 inserted_count, chunks, ids = await _process_page_data(page_data)
                 no_pages += 1
+                # Advance progress bar
+                SCRAPE_PROGRESS[base_url]["pages_done"] = len(processed_urls) + skipped_count
                 if inserted_count:
                     no_records += inserted_count
                     if embed_during:
@@ -894,6 +921,7 @@ async def run_scraping_background(scrape_request: ScrapeRequest, app: FastAPI):
 
         if cancel_ref.get("requested"):
             logger.info(f"Scrape cancelled for {base_url} ({no_pages} pages processed)")
+            SCRAPE_PROGRESS[base_url]["status"] = "cancelled"
             return
 
         if embed_during and embed_buffer_ids:
@@ -915,6 +943,7 @@ async def run_scraping_background(scrape_request: ScrapeRequest, app: FastAPI):
 
         auto_indexed_chunks = 0
         if not embed_during and getattr(settings, "SCRAPING_AUTO_INDEX", True):
+            SCRAPE_PROGRESS[base_url]["status"] = "indexing"
             ok, auto_indexed_chunks = await _index_project_chunks()
             if not ok:
                 logger.error("Auto indexing failed after scraping completed.")
@@ -951,10 +980,27 @@ async def run_scraping_background(scrape_request: ScrapeRequest, app: FastAPI):
             asset_record.asset_id,
             **_cache_fields(cache),
         )
+        SCRAPE_PROGRESS[base_url]["status"] = "completed"
+        SCRAPE_PROGRESS[base_url]["pages_done"] = SCRAPE_PROGRESS[base_url]["pages_total"]
         logger.info(f"[SCRAPE] Completed for {base_url}. Pages: {no_pages}, Chunks: {no_records}")
 
     except Exception as e:
-         logger.error(f"[SCRAPE] Fatal error in background task: {e}")
+        logger.error(f"[SCRAPE] Fatal error in background task: {e}")
+        if base_url_key in SCRAPE_PROGRESS:
+            SCRAPE_PROGRESS[base_url_key]["status"] = "error"
+            SCRAPE_PROGRESS[base_url_key]["error"] = str(e)
+
+
+@data_router.get("/scrape-progress")
+async def get_scrape_progress(base_url: str = Query(..., description="The base URL of the scrape job to check")):
+    """Return real-time progress for a running (or recently completed) scrape job."""
+    progress = SCRAPE_PROGRESS.get(base_url)
+    if progress is None:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"signal": "NOT_FOUND", "message": "No active or recent scrape found for this URL."},
+        )
+    return JSONResponse(content={"signal": "OK", **progress})
 
 
 @data_router.post("/scrape")
