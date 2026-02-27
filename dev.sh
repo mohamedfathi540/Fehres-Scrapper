@@ -190,7 +190,7 @@ trap cleanup SIGINT SIGTERM
 print_banner
 
 # ── STEP 0: Clean up everything ───────────────────────────────────
-step 0 4 "Preparing environment" "$GEAR"
+step 0 3 "Preparing environment" "$GEAR"
 
 # Kill our own previous processes
 kill_pid_file "$BACKEND_PID"
@@ -219,19 +219,8 @@ require_port_free 5173 "Vite frontend"
 
 success "Environment is clean"
 
-# ── STEP 1: Sync env ──────────────────────────────────────────────
-step 1 4 "Syncing environment config" "$GEAR"
-
-if command -v python3 &>/dev/null; then
-    python3 "$PROJECT_ROOT/scripts/sync_env.py" >/dev/null 2>&1 && success "Environment synced" || warn "Env sync had warnings (non-fatal)"
-elif command -v python &>/dev/null; then
-    python "$PROJECT_ROOT/scripts/sync_env.py" >/dev/null 2>&1 && success "Environment synced" || warn "Env sync had warnings (non-fatal)"
-else
-    warn "Python not found — skipping env sync"
-fi
-
-# ── STEP 2: Docker infrastructure ─────────────────────────────────
-step 2 4 "Starting database infrastructure" "$DB"
+# ── STEP 1: Docker infrastructure ─────────────────────────────────
+step 1 3 "Starting database infrastructure" "$DB"
 
 info "Starting pgvector + Qdrant via Docker..."
 docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" up -d 2>&1 | tail -8
@@ -262,7 +251,7 @@ else
 fi
 
 # ── STEP 3: Backend ───────────────────────────────────────────────
-step 3 4 "Starting FastAPI backend" "$BOLT"
+step 2 3 "Starting FastAPI backend" "$BOLT"
 
 cd "$PROJECT_ROOT/SRC"
 
@@ -284,7 +273,7 @@ fi
 cd "$PROJECT_ROOT"
 
 # ── STEP 4: Frontend ──────────────────────────────────────────────
-step 4 4 "Starting Vite frontend" "$GLOBE"
+step 3 3 "Starting Vite frontend" "$GLOBE"
 
 cd "$PROJECT_ROOT/frontend"
 

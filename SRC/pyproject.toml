@@ -42,6 +42,8 @@ dependencies = [
     "huggingface-hub>=1.2.3",
     "langchain-huggingface",
     "sentence-transformers",
+    "torch>=2.0.0",
+    "torchvision",
 ]
 [project.optional-dependencies]
 # Kept for backwards compatibility; playwright is now a main dependency
@@ -49,3 +51,12 @@ scraping-browser = ["playwright>=1.40.0"]
 
 [tool.uv]
 link-mode = "copy"
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+torchvision = [{ index = "pytorch-cpu" }]
