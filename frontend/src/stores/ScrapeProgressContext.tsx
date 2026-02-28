@@ -17,6 +17,11 @@ const STATUS_LABELS: Record<ScrapeProgressStatus, string> = {
 
 const TERMINAL_STATUSES: ScrapeProgressStatus[] = ["completed", "cancelled", "error"];
 
+// ── Per-job state ──────────────────────────────────────────────────────
+interface JobState {
+  progress: ScrapeProgressResponse | null;
+}
+
 // ── Context shape ─────────────────────────────────────────────────────
 interface ScrapeProgressContextValue {
   startPolling: (url: string) => void;
@@ -34,29 +39,41 @@ export function useScrapeProgress() {
 export function ScrapeProgressProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
 
-  const [activeUrl, setActiveUrl] = useState<string | null>(null);
-  const [progress, setProgress] = useState<ScrapeProgressResponse | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Map of url -> JobState for all active/finished scraping jobs
+  const [jobs, setJobs] = useState<Map<string, JobState>>(new Map());
+  // Map of url -> interval id
+  const pollRefs = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
 
-  const stopPolling = useCallback(() => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
+  const stopPollingUrl = useCallback((url: string) => {
+    const id = pollRefs.current.get(url);
+    if (id !== undefined) {
+      clearInterval(id);
+      pollRefs.current.delete(url);
     }
   }, []);
 
   const startPolling = useCallback(
     (url: string) => {
-      stopPolling();
-      setActiveUrl(url);
-      setProgress(null);
+      // If already polling this url, restart it
+      stopPollingUrl(url);
+
+      // Add / reset the job entry
+      setJobs((prev) => {
+        const next = new Map(prev);
+        next.set(url, { progress: null });
+        return next;
+      });
 
       const poll = async () => {
         try {
           const data = await getScrapeProgress(url);
-          setProgress(data);
+          setJobs((prev) => {
+            const next = new Map(prev);
+            next.set(url, { progress: data });
+            return next;
+          });
           if (TERMINAL_STATUSES.includes(data.status)) {
-            stopPolling();
+            stopPollingUrl(url);
             if (data.status === "completed") {
               queryClient.invalidateQueries({ queryKey: ["libraries"] });
             }
@@ -67,105 +84,137 @@ export function ScrapeProgressProvider({ children }: { children: React.ReactNode
       };
 
       poll();
-      pollRef.current = setInterval(poll, 2000);
+      const id = setInterval(poll, 2000);
+      pollRefs.current.set(url, id);
     },
-    [stopPolling, queryClient]
+    [stopPollingUrl, queryClient]
   );
 
-  const handleCancel = async () => {
+  const handleCancel = async (url: string) => {
     try {
       await cancelScrapeDocumentation();
     } catch {
       // ignore
     }
+    // Optimistically mark as cancelled locally
+    setJobs((prev) => {
+      const next = new Map(prev);
+      const job = next.get(url);
+      if (job?.progress) {
+        next.set(url, { progress: { ...job.progress, status: "cancelled" } });
+      }
+      return next;
+    });
+    stopPollingUrl(url);
   };
 
-  const handleDismiss = () => {
-    stopPolling();
-    setActiveUrl(null);
-    setProgress(null);
+  const handleDismiss = (url: string) => {
+    stopPollingUrl(url);
+    setJobs((prev) => {
+      const next = new Map(prev);
+      next.delete(url);
+      return next;
+    });
   };
 
-  const isPolling = activeUrl !== null;
-  const pct =
-    progress && progress.pages_total > 0
-      ? Math.round((progress.pages_done / progress.pages_total) * 100)
-      : 0;
-  const isTerminal = progress ? TERMINAL_STATUSES.includes(progress.status) : false;
+  const jobEntries = Array.from(jobs.entries());
+  const hasJobs = jobEntries.length > 0;
 
   return (
     <ScrapeProgressContext.Provider value={{ startPolling }}>
       {children}
 
       {/* ── Global floating scrape-progress panel ──────────────────── */}
-      {isPolling && (
+      {hasJobs && (
         <div className="fixed bottom-4 right-4 w-96 bg-bg-primary border border-border shadow-xl rounded-xl z-50 overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 pt-3 pb-1">
-            <p className="text-sm font-semibold text-text-primary truncate">
-              {progress?.library_name ?? "Scraping"}
+          {/* Panel header */}
+          <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-border">
+            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+              Scraping Jobs ({jobEntries.length})
             </p>
-            {isTerminal ? (
-              <button onClick={handleDismiss} className="text-text-muted hover:text-text-primary">
-                <XMarkIcon className="w-4 h-4" />
-              </button>
-            ) : (
-              <button onClick={handleCancel} className="text-xs text-error hover:underline">
-                Cancel
-              </button>
-            )}
           </div>
 
-          {/* Status label */}
-          <p className="px-4 text-xs text-text-secondary">
-            {progress ? STATUS_LABELS[progress.status] : "Queued…"}
-            {progress && progress.pages_total > 0 && !isTerminal && (
-              <span className="ml-1 tabular-nums">
-                ({progress.pages_done}/{progress.pages_total})
-              </span>
-            )}
-          </p>
+          {/* Job list — scrollable if many */}
+          <div className="max-h-[70vh] overflow-y-auto divide-y divide-border">
+            {jobEntries.map(([url, { progress }]) => {
+              const isTerminal = progress ? TERMINAL_STATUSES.includes(progress.status) : false;
+              const pct =
+                progress && progress.pages_total > 0
+                  ? Math.round((progress.pages_done / progress.pages_total) * 100)
+                  : 0;
 
-          {/* Progress bar */}
-          <div className="px-4 py-3">
-            <div className="h-2 w-full bg-border rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ease-out ${
-                  progress?.status === "completed"
-                    ? "bg-success"
-                    : progress?.status === "error"
-                    ? "bg-error"
-                    : progress?.status === "cancelled"
-                    ? "bg-warning"
-                    : "bg-primary-500"
-                }`}
-                style={{
-                  width:
-                    progress?.status === "completed"
-                      ? "100%"
-                      : progress?.status === "starting" || progress?.status === "discovering"
-                      ? "5%"
-                      : `${Math.max(pct, 3)}%`,
-                }}
-              />
-            </div>
+              return (
+                <div key={url} className="px-4 pt-3 pb-3">
+                  {/* Job header */}
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-semibold text-text-primary truncate pr-2">
+                      {progress?.library_name ?? "Scraping…"}
+                    </p>
+                    {isTerminal ? (
+                      <button
+                        onClick={() => handleDismiss(url)}
+                        className="text-text-muted hover:text-text-primary flex-shrink-0"
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleCancel(url)}
+                        className="text-xs text-error hover:underline flex-shrink-0"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Status label */}
+                  <p className="text-xs text-text-secondary mb-2">
+                    {progress ? STATUS_LABELS[progress.status] : "Queued…"}
+                    {progress && progress.pages_total > 0 && !isTerminal && (
+                      <span className="ml-1 tabular-nums">
+                        ({progress.pages_done}/{progress.pages_total})
+                      </span>
+                    )}
+                  </p>
+
+                  {/* Progress bar */}
+                  <div className="h-2 w-full bg-border rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ease-out ${
+                        progress?.status === "completed"
+                          ? "bg-success"
+                          : progress?.status === "error"
+                          ? "bg-error"
+                          : progress?.status === "cancelled"
+                          ? "bg-warning"
+                          : "bg-primary-500"
+                      }`}
+                      style={{
+                        width:
+                          progress?.status === "completed"
+                            ? "100%"
+                            : progress?.status === "starting" || progress?.status === "discovering"
+                            ? "5%"
+                            : `${Math.max(pct, 3)}%`,
+                      }}
+                    />
+                  </div>
+
+                  {/* Error message */}
+                  {progress?.error && (
+                    <p className="mt-2 text-xs text-error break-words">{progress.error}</p>
+                  )}
+
+                  {/* Completed message */}
+                  {progress?.status === "completed" && (
+                    <p className="mt-2 text-xs text-success">
+                      Done! {progress.pages_done} pages scraped and indexed — ready to chat.
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
-
-          {/* Error message */}
-          {progress?.error && (
-            <div className="px-4 pb-3">
-              <p className="text-xs text-error break-words">{progress.error}</p>
-            </div>
-          )}
-
-          {/* Completed message */}
-          {progress?.status === "completed" && (
-            <div className="px-4 pb-3">
-              <p className="text-xs text-success">
-                Done! {progress.pages_done} pages scraped and indexed — ready to chat.
-              </p>
-            </div>
-          )}
         </div>
       )}
     </ScrapeProgressContext.Provider>
