@@ -5,6 +5,7 @@ import {
   ChartBarIcon,
   GlobeAltIcon,
   MagnifyingGlassIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { StatusBadge } from "../ui/StatusBadge";
@@ -18,7 +19,12 @@ const navigation = [
   { name: "Index Info", href: "/index", icon: ChartBarIcon },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const { apiUrl } = useSettingsStore();
   const [apiStatus, setApiStatus] = useState<"online" | "offline">("offline");
   const [isChecking, setIsChecking] = useState(false);
@@ -36,12 +42,29 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-60 shrink-0 bg-bg-secondary border-r border-border flex flex-col h-full">
-      <div className="p-5 border-b border-border">
-        <h1 className="text-xl font-semibold tracking-tight text-white">
-          Fehres
-        </h1>
-        <p className="text-xs text-text-muted mt-0.5">RAG System</p>
+    <aside
+      className={`
+        fixed md:static inset-y-0 left-0 z-30
+        w-60 shrink-0 bg-bg-secondary border-r border-border flex flex-col h-full
+        transform transition-transform duration-200 ease-in-out
+        ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+      `}
+    >
+      <div className="p-5 border-b border-border flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight text-white">
+            Fehres
+          </h1>
+          <p className="text-xs text-text-muted mt-0.5">RAG System</p>
+        </div>
+        {/* Close button — mobile only */}
+        <button
+          onClick={onClose}
+          className="md:hidden text-text-muted hover:text-text-primary -mr-1"
+          aria-label="Close menu"
+        >
+          <XMarkIcon className="w-5 h-5" />
+        </button>
       </div>
 
       <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
@@ -49,6 +72,7 @@ export function Sidebar() {
           <NavLink
             key={item.name}
             to={item.href}
+            onClick={onClose}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-150 ${
                 isActive ?

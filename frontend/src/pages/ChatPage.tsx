@@ -92,7 +92,7 @@ export function ChatPage() {
   }, [chatHistory, answerMutation.isPending]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] min-h-0">
+    <div className="flex flex-col h-[calc(100dvh-5.5rem)] md:h-[calc(100dvh-4rem)] min-h-0">
       {/* Header with Library Selector */}
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -109,7 +109,7 @@ export function ChatPage() {
           <label className="block text-xs font-medium text-text-secondary mb-1">
             Select Library
           </label>
-          <div className="relative w-64">
+          <div className="relative w-full sm:w-64">
             <select
               value={selectedLibraryId || ""}
               onChange={(e) => setSelectedLibraryId(Number(e.target.value))}

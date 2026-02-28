@@ -50,7 +50,7 @@ export function IndexInfoPage() {
             View vector database statistics for your project
           </p>
         </div>
-        <div className="relative w-64">
+        <div className="relative w-full md:w-64">
           <label className="block text-xs font-medium text-text-secondary mb-1">
             Select Library
           </label>

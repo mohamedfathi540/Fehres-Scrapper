@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getScrapeProgress, cancelScrapeDocumentation } from "../api/data";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import type { ScrapeProgressResponse, ScrapeProgressStatus } from "../api/types";
 
 // ── Friendly labels for each backend status ──────────────────────────
@@ -43,6 +43,8 @@ export function ScrapeProgressProvider({ children }: { children: React.ReactNode
   const [jobs, setJobs] = useState<Map<string, JobState>>(new Map());
   // Map of url -> interval id
   const pollRefs = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
+  // Whether the panel is minimized
+  const [isMinimized, setIsMinimized] = useState(false);
 
   const stopPollingUrl = useCallback((url: string) => {
     const id = pollRefs.current.get(url);
@@ -126,16 +128,28 @@ export function ScrapeProgressProvider({ children }: { children: React.ReactNode
 
       {/* ── Global floating scrape-progress panel ──────────────────── */}
       {hasJobs && (
-        <div className="fixed bottom-4 right-4 w-96 bg-bg-primary border border-border shadow-xl rounded-xl z-50 overflow-hidden">
+        <div className="fixed bottom-4 right-4 w-[calc(100vw-2rem)] sm:w-96 bg-bg-primary border border-border shadow-xl rounded-xl z-50 overflow-hidden">
           {/* Panel header */}
           <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-border">
             <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">
               Scraping Jobs ({jobEntries.length})
             </p>
+            <button
+              onClick={() => setIsMinimized((v) => !v)}
+              className="text-text-muted hover:text-text-primary transition-colors"
+              aria-label={isMinimized ? "Expand" : "Minimize"}
+            >
+              {isMinimized ? (
+                <ChevronUpIcon className="w-4 h-4" />
+              ) : (
+                <ChevronDownIcon className="w-4 h-4" />
+              )}
+            </button>
           </div>
 
-          {/* Job list — scrollable if many */}
-          <div className="max-h-[70vh] overflow-y-auto divide-y divide-border">
+          {/* Job list — hidden when minimized, scrollable if many */}
+          {!isMinimized && (
+            <div className="max-h-[60vh] sm:max-h-[70vh] overflow-y-auto divide-y divide-border">
             {jobEntries.map(([url, { progress }]) => {
               const isTerminal = progress ? TERMINAL_STATUSES.includes(progress.status) : false;
               const pct =
@@ -215,6 +229,7 @@ export function ScrapeProgressProvider({ children }: { children: React.ReactNode
               );
             })}
           </div>
+          )}
         </div>
       )}
     </ScrapeProgressContext.Provider>
