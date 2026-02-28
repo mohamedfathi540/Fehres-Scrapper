@@ -5,6 +5,7 @@ import { ChatPage } from "./pages/ChatPage";
 import { LibraryDocsPage } from "./pages/LibraryDocsPage";
 import { IndexInfoPage } from "./pages/IndexInfoPage";
 import { SearchPage } from "./pages/SearchPage";
+import { ScrapeProgressProvider } from "./stores/ScrapeProgressContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,17 +19,19 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<ChatPage />} />
-            <Route path="library-docs" element={<LibraryDocsPage />} />
-            <Route path="search" element={<SearchPage />} />
-            <Route path="index" element={<IndexInfoPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <ScrapeProgressProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<MainLayout />}>
+              <Route index element={<ChatPage />} />
+              <Route path="library-docs" element={<LibraryDocsPage />} />
+              <Route path="search" element={<SearchPage />} />
+              <Route path="index" element={<IndexInfoPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </ScrapeProgressProvider>
     </QueryClientProvider>
   );
 }
