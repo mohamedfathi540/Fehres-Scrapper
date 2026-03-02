@@ -11,6 +11,7 @@ from Helpers.Config import get_settings
 from Utils.language_detect import detect_query_language
 from Utils.PromptGuard import PromptGuard
 import json
+import logging
 
 
 
@@ -19,6 +20,7 @@ class NLPController (basecontroller) :
 
     def __init__(self ,genration_client ,embedding_client ,vectordb_client,template_parser) :
         super().__init__()
+        self.logger = logging.getLogger(__name__)
         self.genration_client = genration_client
         self.embedding_client = embedding_client
         self.vectordb_client = vectordb_client  
