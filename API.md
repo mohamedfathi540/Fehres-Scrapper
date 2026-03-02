@@ -6,7 +6,17 @@ Base URL: `http://localhost:8000/api/v1`
 
 ---
 
-## Health Check
+## Table of Contents
+
+- [Health Checks](#health-checks)
+- [Data Management](#data-management)
+- [Documentation Scraping](#documentation-scraping)
+- [NLP and Vector Search](#nlp-and-vector-search)
+- [Error Responses](#error-responses)
+
+---
+
+## Health Checks
 
 ### GET /
 
@@ -18,6 +28,66 @@ Check if the API is running.
 {
   "app_name": "Fehres",
   "app_version": "0.1"
+}
+```
+
+---
+
+### GET /health/live
+
+Liveness probe — returns 200 as long as the Python process is alive and the event-loop is responsive. No external dependency checks.
+
+**Response** `200 OK`
+
+```json
+{
+  "status": "alive",
+  "timestamp": 1740700000.123
+}
+```
+
+---
+
+### GET /health/ready
+
+Readiness probe — verifies all critical dependencies are reachable. Returns 200 only when **all** checks pass; returns 503 otherwise.
+
+**Checks performed:**
+
+| Dependency | Description |
+| --- | --- |
+| `postgres` | Executes `SELECT 1` against the database |
+| `vectordb` | Calls `list_all_collections()` on the vector DB client |
+| `llm_generation` | Verifies the generation LLM client is initialized |
+| `llm_embedding` | Verifies the embedding client is initialized |
+
+**Response** `200 OK` (all healthy)
+
+```json
+{
+  "status": "ready",
+  "timestamp": 1740700000.123,
+  "checks": {
+    "postgres": { "status": "ok" },
+    "vectordb": { "status": "ok" },
+    "llm_generation": { "status": "ok" },
+    "llm_embedding": { "status": "ok" }
+  }
+}
+```
+
+**Response** `503 Service Unavailable` (one or more unhealthy)
+
+```json
+{
+  "status": "not_ready",
+  "timestamp": 1740700000.123,
+  "checks": {
+    "postgres": { "status": "ok" },
+    "vectordb": { "status": "error", "detail": "Connection refused" },
+    "llm_generation": { "status": "ok" },
+    "llm_embedding": { "status": "unavailable", "detail": "embedding_client not initialised" }
+  }
 }
 ```
 
@@ -134,6 +204,145 @@ Process uploaded files into text chunks.
   "signal": "PROCESSING_DONE",
   "Inserted_chunks": 42,
   "processed_files": 1
+}
+```
+
+---
+
+## Documentation Scraping
+
+### POST /data/scrape
+
+Scrape an entire documentation site by URL. Runs in the background — returns immediately with `202 Accepted`.
+
+The scraping pipeline: discovers sitemap/links → scrapes each page with Playwright → chunks & stores content → indexes into the vector database.
+
+**Request Body**
+
+```json
+{
+  "base_url": "https://docs.example.com/",
+  "library_name": "Example Docs",
+  "Do_reset": 0
+}
+```
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| base_url | string | *required* | Root URL of the documentation site |
+| library_name | string | *required* | Unique name for the library/project |
+| Do_reset | integer | 0 | Set to 1 to delete existing data before scraping |
+
+**Response** `202 Accepted`
+
+```json
+{
+  "signal": "SCRAPING_STARTED",
+  "message": "Scraping started in background for Example Docs",
+  "project_id": 5
+}
+```
+
+**Error Responses**
+
+| Status | Signal | Description |
+| --- | --- | --- |
+| 400 | LIBRARY_NAME_REQUIRED | `library_name` was empty |
+| 400 | URL_NOT_ACCESSIBLE | The URL returned non-200 or is unreachable |
+| 500 | PROJECT_CREATION_ERROR | Failed to create or retrieve the project |
+
+---
+
+### GET /data/scrape-progress
+
+Poll real-time progress for a running (or recently completed) scrape job.
+
+**Parameters**
+
+| Name | Type | Location | Description |
+| --- | --- | --- | --- |
+| base_url | string | query | The base URL of the scrape job to check |
+
+**Response** `200 OK`
+
+```json
+{
+  "signal": "OK",
+  "status": "scraping",
+  "library_name": "Example Docs",
+  "pages_done": 12,
+  "pages_total": 47,
+  "error": null
+}
+```
+
+**Status values:**
+
+| Status | Description |
+| --- | --- |
+| `discovering` | Sitemap/link discovery in progress |
+| `scraping` | Actively scraping pages |
+| `indexing` | Chunks are being indexed into the vector database |
+| `completed` | Scraping finished successfully |
+| `cancelled` | Scraping was cancelled |
+| `error` | An error occurred (see `error` field) |
+
+**Error Response** `404 Not Found`
+
+```json
+{
+  "signal": "NOT_FOUND",
+  "message": "No active or recent scrape found for this URL."
+}
+```
+
+---
+
+### GET /data/scrape-debug
+
+Debug endpoint to test scraping a single URL without triggering a full scrape. Returns raw HTML length, extracted text length, and a snippet.
+
+**Parameters**
+
+| Name | Type | Location | Description |
+| --- | --- | --- | --- |
+| url | string | query | The URL to test |
+
+**Response**
+
+```json
+{
+  "url": "https://docs.example.com/",
+  "status_code": 200,
+  "content_type": "text/html; charset=utf-8",
+  "html_len": 125000,
+  "extracted_len": 8400,
+  "extracted_snippet": "Introduction Example is a framework...",
+  "error": null
+}
+```
+
+---
+
+### POST /data/process-scrape-cache
+
+Run chunking (and optionally indexing) from a saved scrape cache. Use this when a scrape completed on the backend but the frontend timed out — no re-fetch needed, just processes the cached HTML.
+
+**Request Body**
+
+```json
+{
+  "base_url": "https://docs.example.com/"
+}
+```
+
+**Response**
+
+```json
+{
+  "signal": "PROCESSING_DONE",
+  "Inserted_chunks": 150,
+  "processed_files": 25
 }
 ```
 
@@ -261,12 +470,18 @@ Get an AI-generated answer using RAG (Retrieval-Augmented Generation).
 
 All endpoints may return the following error responses:
 
-| Status | Signal                      | Description                      |
-| ------ | --------------------------- | -------------------------------- |
-| 400    | FILE_TYPE_ERROR             | Unsupported file type            |
-| 400    | FILE_SIZE_ERROR             | File exceeds maximum size        |
-| 400    | FILE_ID_ERROR               | File ID not found                |
-| 400    | NO_FILE_ERROR               | No files to process              |
-| 400    | PROCESSING_FAILED           | File processing failed           |
-| 404    | PROJECT_NOT_FOUND           | Project does not exist           |
-| 500    | INSERT_INTO_VECTOR_DB_ERROR | Vector database insertion failed |
+| Status | Signal | Description |
+| --- | --- | --- |
+| 400 | FILE_TYPE_ERROR | Unsupported file type |
+| 400 | FILE_SIZE_ERROR | File exceeds maximum size |
+| 400 | FILE_ID_ERROR | File ID not found |
+| 400 | NO_FILE_ERROR | No files to process |
+| 400 | PROCESSING_FAILED | File processing failed |
+| 400 | LIBRARY_NAME_REQUIRED | Library name not provided for scrape |
+| 400 | URL_NOT_ACCESSIBLE | Scrape target URL is unreachable or returned non-200 |
+| 403 | PROMPT_INJECTION_DETECTED | Input was blocked by PromptGuard (prompt injection attempt) |
+| 404 | PROJECT_NOT_FOUND | Project does not exist |
+| 404 | NOT_FOUND | No scrape job found for the given URL |
+| 500 | INSERT_INTO_VECTOR_DB_ERROR | Vector database insertion failed |
+| 500 | PROJECT_CREATION_ERROR | Failed to create or retrieve project |
+| 503 | not_ready | One or more dependencies are unavailable (health check) |

@@ -1,17 +1,31 @@
 # Fehres
 
-A Retrieval-Augmented Generation (RAG) system for document-based question answering. Upload documents, process them into searchable chunks, and get AI-generated answers based on your content.
+A production-ready Retrieval-Augmented Generation (RAG) system for document-based question answering. Upload documents or scrape documentation sites, process them into searchable chunks, and get AI-generated answers grounded in your content — with built-in security, real-time progress tracking, and full observability.
 
 ## Features
 
-- **Modern React Frontend**: Accessible SPA built with React 18, TypeScript, and React Aria Components
-- **Learning Assistant**: Dedicated AI assistant for AI/Data Science references corpus
-- **Multi-format Document Support**: PDF, TXT, Markdown, JSON, CSV, DOCX
-- **Multiple LLM Providers**: OpenAI, Google Gemini, Cohere, HuggingFace, Ollama (local)
-- **Vector Database Options**: PostgreSQL with pgvector, Qdrant
-- **RESTful API**: FastAPI backend with OpenAPI documentation
-- **Monitoring**: Prometheus metrics and Grafana dashboards
-- **Docker Ready**: Full containerized deployment with Docker Compose
+### Core
+
+- **Modern React Frontend** — Accessible SPA built with React 18, TypeScript, and React Aria Components with full mobile responsiveness
+- **Learning Assistant** — Dedicated AI assistant for AI/Data Science reference corpus
+- **Documentation Scraper** — Crawl and index entire documentation sites via URL with sitemap discovery and Playwright-based rendering
+- **Multiple LLM Providers** — OpenAI, Google Gemini, Cohere, HuggingFace, Ollama (fully local)
+- **Vector Database Options** — PostgreSQL with pgvector, Qdrant
+
+### Security
+
+- **Prompt Injection Guard** — Two-layer defense (input filtering + output filtering) blocks injection attempts, persona hijacking, and system-prompt extraction before they reach the LLM or the user
+- **Content Filtering** — HTML noise removal (navbars, footers, ads) ensures only high-quality text enters the RAG pipeline
+- **Language-Aware Responses** — Automatic language detection ensures the LLM responds in the same language as the user's query
+
+### Operations
+
+- **Real-time Scraping Progress** — Live status tracking (discovering → scraping → indexing → completed) with page counts, exposed via API and reflected in the frontend
+- **Health Probes** — Dedicated `/health/live` and `/health/ready` endpoints for container orchestration (Docker, Kubernetes)
+- **Configurable Timeouts** — `OPENAI_REQUEST_TIMEOUT` setting prevents hanging requests to LLM providers
+- **RESTful API** — FastAPI backend with OpenAPI documentation
+- **Monitoring** — Prometheus metrics and Grafana dashboards
+- **Docker Ready** — Full containerized deployment with Docker Compose and optional Cloudflare Tunnel for secure public exposure
 
 ## Architecture
 
@@ -19,11 +33,11 @@ A Retrieval-Augmented Generation (RAG) system for document-based question answer
 flowchart TB
     subgraph Frontend["Frontend Layer"]
         React[React SPA<br/>Primary UI]
-        Streamlit[Streamlit<br/>Testing/Legacy]
     end
 
     subgraph Proxy["Reverse Proxy"]
         Nginx[Nginx]
+        CF["Cloudflare Tunnel<br/>(Optional)"]
     end
 
     subgraph Backend["Backend Services"]
@@ -31,6 +45,8 @@ flowchart TB
         Routes[API Routes]
         Controllers[Controllers]
         Models[Models]
+        PromptGuard[PromptGuard<br/>Input/Output Filtering]
+        LangDetect[Language Detection]
     end
 
     subgraph Data["Data Layer"]
@@ -39,20 +55,23 @@ flowchart TB
     end
 
     subgraph External["External Services"]
-        LLM[LLM Providers<br/>OpenAI/Gemini/Cohere/HuggingFace]
+        LLM[LLM Providers<br/>OpenAI/Gemini/Cohere/HuggingFace/Ollama]
         Embeddings[Embedding Service]
     end
 
     subgraph Monitoring["Monitoring"]
         Prometheus[Prometheus]
         Grafana[Grafana]
+        HealthProbes[Health Probes<br/>Liveness + Readiness]
     end
 
-    React --> Nginx
-    Streamlit --> Nginx
+    React --> CF
+    CF --> Nginx
     Nginx --> FastAPI
     FastAPI --> Routes
     Routes --> Controllers
+    Controllers --> PromptGuard
+    PromptGuard --> LangDetect
     Controllers --> Models
     Models --> PostgreSQL
     Models --> Qdrant
@@ -60,6 +79,7 @@ flowchart TB
     Controllers --> Embeddings
     FastAPI --> Prometheus
     Prometheus --> Grafana
+    FastAPI --> HealthProbes
 ```
 
 ## Quick Start
@@ -145,13 +165,13 @@ pnpm run dev
 
 ### React Frontend (Recommended)
 
-The modern React SPA provides an intuitive interface for all operations:
+The modern React SPA provides an intuitive, mobile-responsive interface for all operations:
 
-1. **Chat**: RAG Q&A with AI-generated answers based on your documents
-2. **Upload & Process**: Upload documents, configure chunking, and process files
-3. **Search**: Semantic search across indexed documents
-4. **Index Info**: View vector database statistics
-5. **Settings**: Configure API URL, project ID, and theme preferences
+1. **Chat** — RAG Q&A with AI-generated answers based on your documents
+2. **Library Docs** — Scrape entire documentation sites by URL with real-time progress tracking (discovering → scraping → indexing → completed)
+3. **Upload & Process** — Upload documents, configure chunking, and process files
+4. **Search** — Semantic search across indexed documents
+5. **Index Info** — View vector database statistics
 
 **Learning Assistant**: A dedicated interface for the AI/Data Science reference corpus. Ask questions about maths, statistics, coding, ML, DL, GenAI, and System Design.
 
@@ -161,6 +181,9 @@ The modern React SPA provides an intuitive interface for all operations:
 2. **Process** the document into chunks via `POST /api/v1/data/process/{project_id}`
 3. **Index** chunks to the vector database via `POST /api/v1/nlp/index/push/{project_id}`
 4. **Ask** questions via `POST /api/v1/nlp/index/answer/{project_id}`
+5. **Scrape** a documentation site via `POST /api/v1/data/scrape/{project_id}`
+6. **Track progress** via `GET /api/v1/data/scrape-progress?base_url=...`
+7. **Health checks** via `GET /api/v1/health/live` and `GET /api/v1/health/ready`
 
 
 For full API documentation, see [API.md](API.md).
@@ -169,24 +192,36 @@ For full API documentation, see [API.md](API.md).
 
 ```
 fehres/
-├── SRC/                    # Backend - FastAPI application
+├── SRC/                    # Backend — FastAPI application
 │   ├── main.py             # Application entry point
 │   ├── Routes/             # API endpoint definitions
+│   │   ├── Data.py         # Upload, process, scrape & progress endpoints
+│   │   ├── NLP.py          # Search, answer, and indexing endpoints
+│   │   └── Health.py       # Liveness & readiness probes
 │   ├── Controllers/        # Business logic
+│   │   ├── NLPController.py        # RAG pipeline with PromptGuard integration
+│   │   └── ScrapingController.py   # Sitemap discovery & page scraping
 │   ├── Models/             # Data models and database schemas
 │   ├── Stores/             # LLM and VectorDB integrations
-│   └── Helpers/            # Configuration and utilities
+│   │   └── LLM/
+│   │       ├── Providers/  # OpenAI, Gemini, Cohere, HuggingFace, Ollama
+│   │       └── Templates/  # System prompts with security constraints
+│   ├── Utils/              # Utilities
+│   │   ├── PromptGuard.py  # Prompt injection defense (input + output)
+│   │   ├── ContentFilter.py # HTML noise removal for scraping
+│   │   └── language_detect.py # Response language matching
+│   └── Helpers/            # Configuration
 ├── frontend/               # React SPA frontend
 │   ├── src/
 │   │   ├── api/            # API clients and types
-│   │   ├── components/     # UI components (ui, layout, features)
+│   │   ├── components/     # UI components (ui, layout)
 │   │   ├── pages/          # Page components
-│   │   └── stores/         # Zustand state management
+│   │   └── stores/         # ScrapeProgressContext & Zustand stores
 │   └── ...                 # Config files (vite, tsconfig, etc.)
-├── Docker/                 # Docker configuration
-├── streamlit_app/          # Testing frontend (legacy)
+├── Docker/                 # Docker Compose & service configs
+│   └── docker-compose.yml  # All services incl. Cloudflare Tunnel
 ├── API.md                  # API reference
-├── TESTING.md              # Testing documentation
+├── project_workflow.md     # Workflow documentation
 └── README.md
 ```
 
@@ -203,6 +238,19 @@ Key environment variables (see `.env.example` for full list):
 | `*_API_KEY` | API keys for LLM providers |
 | `SCRAPING_USE_BROWSER` | Set to `1` to use Playwright (slower, better quality), `0` for requests |
 | `SCRAPING_CONCURRENCY` | Number of concurrent pages to scrape (if browser disabled) |
+| `OPENAI_REQUEST_TIMEOUT` | Timeout in seconds for OpenAI API requests (default: `120`) |
+
+## Security
+
+Fehres includes layered security to protect against prompt injection and ensure response quality:
+
+| Layer | Component | Purpose |
+| --- | --- | --- |
+| **Input Filtering** | `PromptGuard.validate_input()` | Blocks injection patterns, persona hijacking, and system-prompt extraction attempts before the query reaches the LLM |
+| **Output Filtering** | `PromptGuard.validate_output()` | Detects and strips system-prompt leaks from LLM responses before returning to the user |
+| **System Prompt Hardening** | RAG Templates | "Sandwich method" — security constraints are placed before and after context chunks to reinforce persona locks |
+| **Language Enforcement** | `language_detect` | Detects query language via Unicode script analysis and instructs the LLM to respond in the same language |
+| **Content Filtering** | `ContentFilter` | Removes HTML navigation, footers, ads, and noise from scraped pages to ensure clean RAG context |
 
 ## Local Ollama Models
 
@@ -280,13 +328,13 @@ Access the React frontend at `http://localhost:5173`.
 
 ### Streamlit UI (Legacy)
 
+> **Note**: The Streamlit frontend is deprecated. Use the React SPA instead.
+
 ```bash
 cd streamlit_app
 pip install -r requirements.txt
 streamlit run app.py
 ```
-
-See [streamlit_app/README.md](streamlit_app/README.md) for more details.
 
 ### Testing the documentation scraper
 
@@ -337,6 +385,21 @@ SCRAPING_DEBUG=1
 Restart the backend and run a scrape; the first URL’s debug line will appear in the logs.
 
 See [TESTING.md](TESTING.md) for comprehensive testing documentation.
+
+## Recent Changes
+
+| Date | Change | Details |
+| --- | --- | --- |
+| 2026-02-28 | **Cloudflare Tunnel** | Added `cloudflared` service to Docker Compose for secure public exposure without port forwarding |
+| 2026-02-28 | **Mobile UI** | Enhanced `MainLayout` and `Sidebar` for mobile responsiveness; added minimize functionality to the scrape progress panel |
+| 2026-02-27 | **Multi-job Scraping** | `ScrapeProgressContext` now manages multiple simultaneous scraping jobs with independent progress tracking |
+| 2026-02-27 | **Health Probes** | Added `/health/live` (liveness) and `/health/ready` (readiness) endpoints checking Postgres, VectorDB, LLM, and embedding clients |
+| 2026-02-27 | **Real-time Scrape Progress** | Added `GET /data/scrape-progress` endpoint and frontend polling for live status updates during documentation scraping |
+| 2026-02-27 | **PyTorch Support** | Added `torch` and `torchvision` as project dependencies |
+| 2026-02-26 | **PromptGuard** | Two-layer defense against prompt injection — input filtering blocks malicious queries, output filtering detects system-prompt leaks |
+| 2026-02-26 | **Language Detection** | Automatic language detection ensures LLM responds in the user's query language |
+| 2026-02-26 | **OpenAI Timeout** | Added `OPENAI_REQUEST_TIMEOUT` config setting with graceful timeout handling |
+| 2026-02-26 | **Database Resilience** | Added `pool_pre_ping` and `pool_recycle` to SQLAlchemy engine for robust database connections |
 
 ## License
 

@@ -1,14 +1,15 @@
 # Fehres Frontend
 
-A modern, accessible React SPA for the Fehres RAG (Retrieval-Augmented Generation) system.
+A modern, accessible, and mobile-responsive React SPA for the Fehres RAG (Retrieval-Augmented Generation) system.
 
 ## Features
 
-- **Chat Interface**: RAG Q&A with AI-generated answers
-- **Upload & Process**: File upload, chunking, and indexing workflow
-- **Semantic Search**: Natural language search on indexed documents
-- **Index Info**: Vector database statistics dashboard
-- **Settings**: API configuration and preferences
+- **Chat Interface** — RAG Q&A with AI-generated answers
+- **Library Docs** — Scrape entire documentation sites by URL with real-time progress tracking (multi-job support)
+- **Upload & Process** — File upload, chunking, and indexing workflow
+- **Semantic Search** — Natural language search on indexed documents
+- **Index Info** — Vector database statistics dashboard
+- **Mobile Responsive** — Collapsible sidebar and minimizable progress panels for mobile devices
 
 ## Tech Stack
 
@@ -74,12 +75,22 @@ docker run -p 80:80 fehres-frontend
 frontend/
 ├── src/
 │   ├── api/          # API clients and types
+│   │   ├── base.ts       # Base HTTP client
+│   │   ├── client.ts     # Configured API client
+│   │   ├── data.ts       # Data endpoints (upload, process, scrape, scrape-progress)
+│   │   ├── nlp.ts        # NLP endpoints (search, answer, index)
+│   │   └── types.ts      # Shared TypeScript types (incl. ScrapeProgress)
 │   ├── components/   # React components
 │   │   ├── ui/       # Base UI components
-│   │   ├── layout/   # Layout components
-│   │   └── features/ # Feature-specific components
+│   │   └── layout/   # Layout components (MainLayout, Sidebar — mobile-responsive)
 │   ├── pages/        # Page components
-│   ├── stores/       # Zustand stores
+│   │   ├── ChatPage.tsx
+│   │   ├── LibraryDocsPage.tsx   # Documentation scraper with progress UI
+│   │   ├── SearchPage.tsx
+│   │   └── IndexInfoPage.tsx
+│   ├── stores/       # State management
+│   │   ├── ScrapeProgressContext.tsx  # Multi-job scraping progress context
+│   │   └── settingsStore.ts          # Zustand settings store
 │   └── utils/        # Utility functions
 ├── public/           # Static assets
 └── ...
@@ -87,17 +98,23 @@ frontend/
 
 ## API Integration
 
-The frontend communicates with the Fehres API at `http://localhost:8000/api/v1` by default. This can be changed in the Settings page.
+The frontend communicates with the Fehres API at `http://localhost:8000/api/v1` by default. This can be configured via the `VITE_API_URL` environment variable.
 
 Available endpoints:
 
-- `GET /` - Health check
-- `POST /data/upload/{project_id}` - Upload files
-- `POST /data/process/{project_id}` - Process files into chunks
-- `POST /nlp/index/push/{project_id}` - Push chunks to vector DB
-- `GET /nlp/index/info/{project_id}` - Get index info
-- `POST /nlp/index/search/{project_id}` - Semantic search
-- `POST /nlp/index/answer/{project_id}` - RAG Q&A
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/` | Health check |
+| `POST` | `/data/upload/{project_id}` | Upload files |
+| `POST` | `/data/process/{project_id}` | Process files into chunks |
+| `POST` | `/data/scrape` | Scrape a documentation site (background) |
+| `GET` | `/data/scrape-progress?base_url=...` | Poll scraping progress |
+| `POST` | `/nlp/index/push/{project_id}` | Push chunks to vector DB |
+| `GET` | `/nlp/index/info/{project_id}` | Get index info |
+| `POST` | `/nlp/index/search/{project_id}` | Semantic search |
+| `POST` | `/nlp/index/answer/{project_id}` | RAG Q&A |
+| `GET` | `/health/live` | Liveness probe |
+| `GET` | `/health/ready` | Readiness probe |
 
 ## License
 

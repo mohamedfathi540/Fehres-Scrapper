@@ -1,26 +1,31 @@
-# Docker Configuration README
+# Docker Configuration
 
-This directory contains the Docker configurations for deploying the project's microservices architecture. The setup uses Docker Compose to orchestrate multiple services including the main FastAPI application, databases, and monitoring tools.
+This directory contains the Docker Compose configuration for deploying the Fehres RAG system as a microservices architecture. The stack orchestrates the FastAPI backend, React frontend, databases, monitoring tools, and an optional Cloudflare Tunnel for secure public access.
 
 ## Prerequisites
 
-- [Docker](https://docs.docker.com/get-docker/) installed.
-- [Docker Compose](https://docs.docker.com/compose/install/) installed.
+- [Docker](https://docs.docker.com/get-docker/) (v20.10+)
+- [Docker Compose](https://docs.docker.com/compose/install/) (v2.0+)
 
 ## Services Overview
 
 The `docker-compose.yml` defines the following services:
 
 ### Application & Proxy
-- **`fastapi`**: The core application server running the FastAPI app.
+- **`fastapi`** — Core application server running the FastAPI backend.
   - **Build Context**: Project root (`..`).
-  - **Dockerfile**: `docker/minirag/Dockerfile`.
+  - **Dockerfile**: `Docker/minirag/Dockerfile`.
   - **Port**: `8000`.
-  - **Dependencies**: Waits for `pgvector` to be healthy.
-- **`nginx`**: A reverse proxy serving as the entry point.
-  - **Port**: `80` (mapped to host).
+  - **DNS**: Configured with local Docker resolver (`127.0.0.11`), Google DNS (`8.8.8.8`), and Cloudflare DNS (`1.1.1.1`) for reliable external connectivity.
+  - **Dependencies**: Waits for `pgvector` to be healthy and `qdrant` to start.
+  - **Health Probes**: Exposes `/api/v1/health/live` (liveness) and `/api/v1/health/ready` (readiness) endpoints.
+- **`frontend`** — React SPA served via Nginx.
+  - **Build Context**: `../frontend`.
+  - **Port**: `5173` (Host) → `80` (Container).
+- **`nginx`** — Reverse proxy serving as the unified entry point.
+  - **Port**: `8888` (Host) → `80` (Container).
   - **Configuration**: `Nginx/Default.conf`.
-  - **Routing**: Proxies requests to `fastapi`.
+  - **Routing**: Proxies requests to `fastapi` and `frontend`.
 
 ### Databases
 - **`pgvector`**: PostgreSQL 17 extended with `pgvector` for vector similarity search.
@@ -34,29 +39,40 @@ The `docker-compose.yml` defines the following services:
   - **Data Persistence**: Named volume `qdrant_data`.
 
 ### Monitoring & Observability
-- **`prometheus`**: Collects and stores metrics.
+- **`prometheus`** — Collects and stores time-series metrics.
   - **Port**: `9090`.
   - **Configuration**: `Prometheus/prometheus.yml`.
   - **Data Persistence**: Named volume `prometheus_data`.
-- **`grafana`**: Visualization dashboard for Prometheus metrics.
+- **`grafana`** — Visualization dashboard for Prometheus metrics.
   - **Port**: `3000`.
   - **Dependencies**: `prometheus`.
   - **Data Persistence**: Named volume `grafana_data`.
-- **`node_exporter`**: Exports hardware and OS metrics exposed by *NIX kernels.
+- **`node_exporter`** — Exports hardware and OS metrics exposed by *NIX kernels.
   - **Port**: `9100`.
   - **Mounts**: Read-only mounts of host `/proc`, `/sys`, and `/` to gather system metrics.
-- **`postgres_exporter`**: Exports PostgreSQL metrics.
+- **`postgres_exporter`** — Exports PostgreSQL metrics.
   - **Port**: `9187`.
   - **Dependencies**: `pgvector`.
+
+### Secure Tunnel (Optional)
+- **`cloudflared`** — Cloudflare Tunnel connector for secure public exposure without port forwarding.
+  - **Image**: `cloudflare/cloudflared:latest`.
+  - **Configuration**: Reads `TUNNEL_TOKEN` from `env/.env.cloudflared`.
+  - **Dependencies**: `nginx`.
+  - **Purpose**: Bypasses dynamic IPs and ISP-blocked ports by routing traffic through Cloudflare's network. Set up a tunnel in the [Cloudflare Zero Trust Dashboard](https://one.dash.cloudflare.com/) to get your token.
 
 ## Configuration Details
 
 ### Environment Variables
-Environment variables are loaded from the `env/` directory.
-- `.env.app`: FastAPI application settings.
-- `.env.postgres`: PostgreSQL credentials (user, password, db).
-- `.env.grafana`: Grafana settings (admin credentials).
-- `.env.postgres-exporter`: Exporter credentials (should match postgres).
+Environment variables are loaded from the `env/` directory:
+
+| File | Purpose |
+| --- | --- |
+| `.env.app` | FastAPI application settings (LLM keys, DB connection, scraping config, `OPENAI_REQUEST_TIMEOUT`, etc.) |
+| `.env.postgres` | PostgreSQL credentials (user, password, db) |
+| `.env.grafana` | Grafana settings (admin credentials) |
+| `.env.postgres-exporter` | Exporter credentials (should match postgres) |
+| `.env.cloudflared` | Cloudflare Tunnel token (`TUNNEL_TOKEN`) |
 
 > [!WARNING]
 > **Configuration Discrepancy Note**: The `docker-compose.yml` refers to `./env/.env.postgres-exporter`, but the actual file in the directory might be named `2.postgres-exporter`. Please verify the filename matches the docker-compose reference.
@@ -96,10 +112,17 @@ docker-compose logs -f [service_name]
 ```
 
 ## Access Points
-- **App via Nginx**: http://localhost
-- **FastAPI Direct**: http://localhost:8000
-- **Grafana**: http://localhost:3000
-- **Prometheus**: http://localhost:9090
+
+| Service | URL |
+| --- | --- |
+| **React Frontend** | http://localhost:5173 |
+| **App via Nginx** (reverse proxy) | http://localhost:8888 |
+| **FastAPI Direct** | http://localhost:8000 |
+| **API Docs (Swagger)** | http://localhost:8000/docs |
+| **Health — Liveness** | http://localhost:8000/api/v1/health/live |
+| **Health — Readiness** | http://localhost:8000/api/v1/health/ready |
+| **Grafana** | http://localhost:3000 |
+| **Prometheus** | http://localhost:9090 |
 
 ## Bash Commands & Entrypoints
 
