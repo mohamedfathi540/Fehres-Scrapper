@@ -115,7 +115,44 @@ This script will:
 3. Start the FastAPI backend (port 8000)
 4. Start the React frontend (port 5173)
 
-### Manual Setup (Alternative)
+### Docker Deployment (Production)
+
+Deploy the full stack with Docker Compose:
+
+```bash
+# 1. Clone
+git clone <repository-url>
+cd fehres
+
+# 2. Configure environment files
+cd Docker/env
+cp .env.app.example .env.app
+cp .env.postgres.example .env.postgres
+cp .env.grafana.example .env.grafana
+cp .env.postgres-exporter.example .env.postgres-exporter
+# Optional: Cloudflare Tunnel for public access
+# cp .env.cloudflared.example .env.cloudflared
+
+# 3. Edit .env.app with your API keys and LLM provider
+nano .env.app
+
+# 4. Start all services
+cd ..
+docker compose up -d --build
+```
+
+Services will be available at:
+
+- **React Frontend**: http://localhost:5173
+- **App via Nginx**: http://localhost:8888
+- **API (direct)**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+- **Grafana**: http://localhost:3000
+- **Prometheus**: http://localhost:9090
+
+See [Docker/README.md](Docker/README.md) for detailed Docker configuration and a full list of environment variables.
+
+### Local Development (Alternative)
 
 If you prefer to run services individually:
 

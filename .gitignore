@@ -17,6 +17,7 @@ ENV/
 !.env.example
 SRC/.env
 Docker/env/.env*
+!Docker/env/.env.*.example
 
 # Lock files
 *.lock

@@ -7,6 +7,32 @@ This directory contains the Docker Compose configuration for deploying the Fehre
 - [Docker](https://docs.docker.com/get-docker/) (v20.10+)
 - [Docker Compose](https://docs.docker.com/compose/install/) (v2.0+)
 
+## Quick Start
+
+```bash
+cd Docker/env
+
+# 1. Create env files from examples
+cp .env.app.example .env.app
+cp .env.postgres.example .env.postgres
+cp .env.grafana.example .env.grafana
+cp .env.postgres-exporter.example .env.postgres-exporter
+
+# 2. (Optional) Cloudflare Tunnel for public access
+cp .env.cloudflared.example .env.cloudflared
+
+# 3. Edit .env.app with your API keys and preferences
+#    At minimum, set your LLM provider and API key.
+nano .env.app
+
+# 4. Start all services
+cd ..
+docker compose up -d --build
+```
+
+> [!TIP]
+> Example files (`.env.*.example`) are provided for every service in the `env/` directory. Each one contains detailed comments explaining every variable. Copy them, fill in your keys, and you're ready to go.
+
 ## Services Overview
 
 The `docker-compose.yml` defines the following services:
@@ -64,15 +90,18 @@ The `docker-compose.yml` defines the following services:
 ## Configuration Details
 
 ### Environment Variables
-Environment variables are loaded from the `env/` directory:
+Environment variables are loaded from the `env/` directory. **Example files are provided** — copy them to create your actual config:
 
-| File | Purpose |
-| --- | --- |
-| `.env.app` | FastAPI application settings (LLM keys, DB connection, scraping config, `OPENAI_REQUEST_TIMEOUT`, etc.) |
-| `.env.postgres` | PostgreSQL credentials (user, password, db) |
-| `.env.grafana` | Grafana settings (admin credentials) |
-| `.env.postgres-exporter` | Exporter credentials (should match postgres) |
-| `.env.cloudflared` | Cloudflare Tunnel token (`TUNNEL_TOKEN`) |
+| Example File | Copy To | Purpose |
+| --- | --- | --- |
+| `.env.app.example` | `.env.app` | FastAPI application settings (LLM keys, DB connection, scraping config, timeouts, etc.) |
+| `.env.postgres.example` | `.env.postgres` | PostgreSQL credentials (user, password, db) |
+| `.env.grafana.example` | `.env.grafana` | Grafana admin credentials |
+| `.env.postgres-exporter.example` | `.env.postgres-exporter` | Postgres exporter credentials (must match `.env.postgres`) |
+| `.env.cloudflared.example` | `.env.cloudflared` | *(Optional)* Cloudflare Tunnel token for public access |
+
+> [!IMPORTANT]
+> **Database credentials must be consistent.** The `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`/`POSTGRES_MAIN_DB` values in `.env.app`, `.env.postgres`, and `.env.postgres-exporter` must all match.
 
 > [!WARNING]
 > **Configuration Discrepancy Note**: The `docker-compose.yml` refers to `./env/.env.postgres-exporter`, but the actual file in the directory might be named `2.postgres-exporter`. Please verify the filename matches the docker-compose reference.
