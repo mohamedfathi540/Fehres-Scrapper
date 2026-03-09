@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowPathIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { RefreshCw, ChevronDown } from "lucide-react";
 import { getIndexInfo } from "../api/nlp";
 import { getLibraries } from "../api/data";
 import { Card } from "../components/ui/Card";
@@ -71,7 +71,7 @@ export function IndexInfoPage() {
                 ))
               )}
             </select>
-            <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
           </div>
         </div>
         <Button
@@ -80,7 +80,7 @@ export function IndexInfoPage() {
           variant="secondary"
           isDisabled={!selectedLibrary}
         >
-          <ArrowPathIcon className="w-5 h-5" />
+          <RefreshCw className="w-5 h-5" />
           Refresh
         </Button>
       </div>

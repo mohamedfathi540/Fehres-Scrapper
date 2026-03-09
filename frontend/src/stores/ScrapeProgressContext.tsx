@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getScrapeProgress, cancelScrapeDocumentation } from "../api/data";
-import { XMarkIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
+import { X, ChevronDown, ChevronUp } from "lucide-react";
 import type { ScrapeProgressResponse, ScrapeProgressStatus } from "../api/types";
 
 // ── Friendly labels for each backend status ──────────────────────────
@@ -140,9 +140,9 @@ export function ScrapeProgressProvider({ children }: { children: React.ReactNode
               aria-label={isMinimized ? "Expand" : "Minimize"}
             >
               {isMinimized ? (
-                <ChevronUpIcon className="w-4 h-4" />
+                <ChevronUp className="w-4 h-4" />
               ) : (
-                <ChevronDownIcon className="w-4 h-4" />
+                <ChevronDown className="w-4 h-4" />
               )}
             </button>
           </div>
@@ -169,7 +169,7 @@ export function ScrapeProgressProvider({ children }: { children: React.ReactNode
                         onClick={() => handleDismiss(url)}
                         className="text-text-muted hover:text-text-primary flex-shrink-0"
                       >
-                        <XMarkIcon className="w-4 h-4" />
+                        <X className="w-4 h-4" />
                       </button>
                     ) : (
                       <button

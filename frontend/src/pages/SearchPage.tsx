@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { MagnifyingGlassIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { Search, ChevronDown, ChevronRight } from "lucide-react";
 import { searchIndex } from "../api/nlp";
 import { getLibraries } from "../api/data";
 import { Button } from "../components/ui/Button";
@@ -96,7 +96,7 @@ export function SearchPage() {
                     ))
                   )}
                 </select>
-                <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
               </div>
             </div>
 
@@ -114,7 +114,7 @@ export function SearchPage() {
               isLoading={searchMutation.isPending}
               isDisabled={!query.trim() || !selectedLibrary}
             >
-              <MagnifyingGlassIcon className="w-5 h-5" />
+              <Search className="w-5 h-5" />
               Search
             </Button>
           </div>
@@ -172,7 +172,7 @@ export function SearchPage() {
                     </p>
                   </div>
                   <button className="ml-4 text-text-muted hover:text-text-primary">
-                    {isExpanded ? "▼" : "▶"}
+                    {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   </button>
                 </div>
 

@@ -1,22 +1,23 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
-  ChatBubbleLeftRightIcon,
-  ChartBarIcon,
-  GlobeAltIcon,
-  MagnifyingGlassIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+  MessageSquare,
+  BarChart3,
+  Globe,
+  Search,
+  X,
+  Workflow,
+} from "lucide-react";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { StatusBadge } from "../ui/StatusBadge";
 import { Button } from "../ui/Button";
 import { checkHealth } from "../../api/base";
 
 const navigation = [
-  { name: "Chat", href: "/", icon: ChatBubbleLeftRightIcon },
-  { name: "Library Docs", href: "/library-docs", icon: GlobeAltIcon },
-  { name: "Search", href: "/search", icon: MagnifyingGlassIcon },
-  { name: "Index Info", href: "/index", icon: ChartBarIcon },
+  { name: "Chat", href: "/", icon: MessageSquare },
+  { name: "Library Docs", href: "/library-docs", icon: Globe },
+  { name: "Search", href: "/search", icon: Search },
+  { name: "Index Info", href: "/index", icon: BarChart3 },
 ];
 
 interface SidebarProps {
@@ -51,11 +52,16 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       `}
     >
       <div className="p-5 border-b border-border flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight text-white">
-            Fehres
-          </h1>
-          <p className="text-xs text-text-muted mt-0.5">RAG System</p>
+        <div className="flex items-center gap-3">
+          <div className="p-1.5 bg-primary-600 rounded-lg">
+            <Workflow className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-white">
+              Fehres
+            </h1>
+            <p className="text-xs text-text-muted mt-0.5">RAG System</p>
+          </div>
         </div>
         {/* Close button — mobile only */}
         <button
@@ -63,7 +69,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           className="md:hidden text-text-muted hover:text-text-primary -mr-1"
           aria-label="Close menu"
         >
-          <XMarkIcon className="w-5 h-5" />
+          <X className="w-5 h-5" />
         </button>
       </div>
 

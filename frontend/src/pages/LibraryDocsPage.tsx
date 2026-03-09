@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { GlobeAltIcon, PlusIcon, BookOpenIcon } from "@heroicons/react/24/outline";
+import { Globe, Plus, BookOpen } from "lucide-react";
 import { scrapeDocumentation, getLibraries } from "../api/data";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
@@ -66,7 +66,7 @@ export function LibraryDocsPage() {
           </p>
         </div>
         <Button onPress={() => setIsModalOpen(true)}>
-          <PlusIcon className="w-5 h-5 mr-2" />
+          <Plus className="w-5 h-5 mr-2" />
           Add Library
         </Button>
       </div>
@@ -77,7 +77,7 @@ export function LibraryDocsPage() {
           <Card key={lib.id} title={lib.name} className="hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-primary-50 rounded-lg">
-                <BookOpenIcon className="w-6 h-6 text-primary-600" />
+                <BookOpen className="w-6 h-6 text-primary-600" />
               </div>
               <div>
                 <p className="text-xs text-text-secondary">Project ID: {lib.id}</p>
@@ -122,7 +122,7 @@ export function LibraryDocsPage() {
                   Documentation URL
                 </label>
                 <div className="relative">
-                  <GlobeAltIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                   <input
                     type="url"
                     value={baseUrl}

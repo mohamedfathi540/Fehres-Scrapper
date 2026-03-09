@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { PaperAirplaneIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { Send, ChevronDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useSettingsStore } from "../stores/settingsStore";
@@ -126,7 +126,7 @@ export function ChatPage() {
                 ))
               )}
             </select>
-            <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
           </div>
         </div>
       </div>
@@ -218,7 +218,7 @@ export function ChatPage() {
               isLoading={answerMutation.isPending}
               isDisabled={!question.trim() || !selectedLibrary}
             >
-              <PaperAirplaneIcon className="w-5 h-5" />
+              <Send className="w-5 h-5" />
               Send
             </Button>
           </form>

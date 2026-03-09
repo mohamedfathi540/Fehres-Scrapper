@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import { Bars3Icon } from "@heroicons/react/24/outline";
+import { Menu, Workflow } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 
 export function MainLayout() {
@@ -26,8 +26,11 @@ export function MainLayout() {
             className="text-text-secondary hover:text-text-primary"
             aria-label="Open menu"
           >
-            <Bars3Icon className="w-6 h-6" />
+            <Menu className="w-6 h-6" />
           </button>
+          <div className="p-1 bg-primary-600 rounded-lg">
+            <Workflow className="w-4 h-4 text-white" />
+          </div>
           <h1 className="text-lg font-semibold text-white">Fehres</h1>
           <span className="text-xs text-text-muted">RAG System</span>
         </header>
