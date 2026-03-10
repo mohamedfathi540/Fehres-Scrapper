@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   MessageSquare,
   BarChart3,
@@ -7,8 +7,10 @@ import {
   Search,
   X,
   Workflow,
+  LogOut,
 } from "lucide-react";
 import { useSettingsStore } from "../../stores/settingsStore";
+import { useAuthStore } from "../../stores/authStore";
 import { StatusBadge } from "../ui/StatusBadge";
 import { Button } from "../ui/Button";
 import { checkHealth } from "../../api/base";
@@ -27,6 +29,9 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const { apiUrl } = useSettingsStore();
+  const logout = useAuthStore((s) => s.logout);
+  const email = useAuthStore((s) => s.email);
+  const navigate = useNavigate();
   const [apiStatus, setApiStatus] = useState<"online" | "offline">("offline");
   const [isChecking, setIsChecking] = useState(false);
 
@@ -94,6 +99,20 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       </nav>
 
       <div className="p-3 border-t border-border space-y-3">
+        {email && (
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-text-secondary truncate" title={email}>
+              {email}
+            </p>
+            <button
+              onClick={() => { logout(); navigate('/login', { replace: true }); }}
+              className="text-text-muted hover:text-error transition-colors"
+              aria-label="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        )}
         <div className="flex items-center justify-between gap-2">
           <StatusBadge
             status={apiStatus}
