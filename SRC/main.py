@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from Routes import Base
 from Routes import Data
 from Routes import NLP
 from Routes import Health
+from Routes import Auth
 from Helpers.Config import get_settings
 from Stores.LLM.LLMProviderFactory import LLMProviderFactory
 from Stores.VectorDB.VectorDBProviderFactory import VectorDBProviderFactory
@@ -10,6 +11,11 @@ from Stores.LLM.Templates.template_parser import template_parser as TemplatePars
 from sqlalchemy.ext.asyncio import create_async_engine ,AsyncSession
 from sqlalchemy.orm import sessionmaker
 from Utils.metrics import setup_metrics
+from Controllers.AuthController import get_current_user
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 
 #Create FastAPI instance
@@ -17,6 +23,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 #Create FastAPI instance
 app =FastAPI()
+
+# Rate limiter (keyed by client IP)
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -79,7 +91,12 @@ async def shutdown_span() :
 
 
 #Include routers
+
+# Public routes (no auth required)
+app.include_router(Auth.auth_router)
 app.include_router(Base.base_router)
-app.include_router(Data.data_router)
-app.include_router(NLP.nlp_router)
 app.include_router(Health.health_router)
+
+# Protected routes (JWT auth required)
+app.include_router(Data.data_router, dependencies=[Depends(get_current_user)])
+app.include_router(NLP.nlp_router, dependencies=[Depends(get_current_user)])
