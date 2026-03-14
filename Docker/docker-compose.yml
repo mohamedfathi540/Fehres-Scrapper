@@ -1,6 +1,5 @@
 services:
   #FASTAPI Application
-
   fastapi:
     build:
       context: ..
@@ -15,6 +14,10 @@ services:
     volumes:
       - fastapi_data:/app/Assets
       - playwright_browsers:/ms-playwright
+      # Forces downloaded AI models to save on the 2TB drive
+      - /srv/mergerfs/2TB/fehres_hf_cache:/app/cache
+    environment:
+      - HF_HOME=/app/cache
     networks:
       - backend
     restart: always
@@ -25,6 +28,13 @@ services:
         condition: service_started
     env_file:
       - ./env/.env.app
+    ulimits:
+      core: 0
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'    # Max 1 CPU core
+          memory: 1G     # Max 1GB RAM
 
   #Frontend Application
   frontend:
@@ -45,7 +55,7 @@ services:
     ports:
       - "8888:80"
     volumes:
-      - ./Nginx/Default.conf:/etc/nginx/conf.d/Default.conf
+      - ./Nginx/Default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - fastapi
       - frontend
@@ -54,14 +64,13 @@ services:
     restart: always
 
   #PostgreSQL (PGvector)
-
   pgvector:
     image: pgvector/pgvector:0.8.0-pg17
     container_name: pgvector
     ports:
       - "5434:5432"
     volumes:
-      - "pgvector:/var/lib/postgresql/data"
+      - /srv/mergerfs/2TB/fehres_db:/var/lib/postgresql/data
     env_file:
       - ./env/.env.postgres
     networks:
@@ -73,9 +82,15 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    ulimits:
+      core: 0
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'    # Max half a CPU core
+          memory: 512M   # Max 512MB RAM
 
   #Qdrant (Vector DB)
-
   qdrant:
     image: qdrant/qdrant:latest
     container_name: qdrant
@@ -83,11 +98,18 @@ services:
       - "6333:6333"
       - "6334:6334"
     volumes:
-      - "qdrant_data:/qdrant/storage"
+      # Moved from Docker volume to the 2TB drive
+      - /srv/mergerfs/2TB/fehres_qdrant:/qdrant/storage
     networks:
       - backend
     restart: always
-
+    ulimits:
+      core: 0
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'    # Max half a CPU core
+          memory: 512M   # Max 512MB RAM
 
   #Prometheus Monitoring
   prometheus:
@@ -158,7 +180,5 @@ networks:
 volumes:
   fastapi_data:
   playwright_browsers:
-  pgvector:
-  qdrant_data:
   prometheus_data:
   grafana_data:
