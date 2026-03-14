@@ -15,12 +15,9 @@ asyncpg==0.30.0
 alembic==1.14.0
 psycopg2-binary==2.9.10
 pgvector==0.4.0
-pymongo>=4.6.1
 
 # Monitoring and metrics
 prometheus-client==0.21.1
-starlette-exporter==0.23.0
-fastapi-health==0.4.0
 
 # Authentication & Security
 passlib[bcrypt]>=1.7.4
@@ -48,6 +45,5 @@ beautifulsoup4>=4.12.0
 requests>=2.31.0
 langchain-community>=0.0.20
 lxml>=4.9.0
-urllib3>=2.0.0
 # Optional for SCRAPING_USE_BROWSER=1 (JS-rendered sites): pip install playwright && playwright install chromium
 # playwright>=1.40.0

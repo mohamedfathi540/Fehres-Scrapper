@@ -2,6 +2,56 @@ import axios, { type AxiosInstance, type AxiosError } from 'axios';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useAuthStore } from '../stores/authStore';
 
+const DEFAULT_API_PREFIX = '/api/v1';
+
+const normalizeApiUrl = (url?: string): string => {
+    const trimmed = (url ?? '').trim();
+    if (!trimmed) {
+        return DEFAULT_API_PREFIX;
+    }
+    return trimmed.replace(/\/+$/, '');
+};
+
+const extractErrorMessage = (error: AxiosError): string => {
+    const data = error.response?.data;
+
+    if (typeof data === 'string') {
+        return data || 'An error occurred';
+    }
+
+    if (data && typeof data === 'object') {
+        const payload = data as Record<string, unknown>;
+        const detail = payload.detail;
+
+        if (typeof detail === 'string' && detail) {
+            return detail;
+        }
+
+        if (Array.isArray(detail) && detail.length > 0) {
+            const first = detail[0];
+            if (typeof first === 'string') {
+                return first;
+            }
+            if (first && typeof first === 'object' && 'msg' in first) {
+                const msg = (first as { msg?: unknown }).msg;
+                if (typeof msg === 'string' && msg) {
+                    return msg;
+                }
+            }
+        }
+
+        const keys = ['signal', 'Signal', 'error', 'message'];
+        for (const key of keys) {
+            const value = payload[key];
+            if (typeof value === 'string' && value) {
+                return value;
+            }
+        }
+    }
+
+    return 'An error occurred';
+};
+
 // Create axios instance
 const createApiClient = (): AxiosInstance => {
     const client = axios.create({
@@ -16,7 +66,7 @@ const createApiClient = (): AxiosInstance => {
     client.interceptors.request.use(
         (config) => {
             const { apiUrl } = useSettingsStore.getState();
-            config.baseURL = apiUrl;
+            config.baseURL = normalizeApiUrl(apiUrl);
 
             const { token } = useAuthStore.getState();
             if (token) {
@@ -36,11 +86,10 @@ const createApiClient = (): AxiosInstance => {
                 if (error.response.status === 401) {
                     useAuthStore.getState().logout();
                 }
-                const errorData = error.response.data as { signal?: string; Signal?: string; error?: string; detail?: string };
-                const errorMessage = errorData.detail || errorData.signal || errorData.Signal || errorData.error || 'An error occurred';
+                const errorMessage = extractErrorMessage(error);
                 return Promise.reject(new Error(errorMessage));
             } else if (error.request) {
-                return Promise.reject(new Error('No response from server. Please check if the API is running.'));
+                return Promise.reject(new Error('No response from server. Check API URL in Settings and verify backend/proxy is reachable.'));
             } else {
                 return Promise.reject(new Error(error.message));
             }
@@ -59,10 +108,11 @@ export const uploadFileWithProgress = async (
     onProgress?: (progress: number) => void
 ) => {
     const { apiUrl } = useSettingsStore.getState();
+    const baseUrl = normalizeApiUrl(apiUrl);
     const formData = new FormData();
     formData.append('file', file);
 
-    return axios.post(`${apiUrl}${url}`, formData, {
+    return axios.post(`${baseUrl}${url}`, formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },

@@ -2,6 +2,18 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ChatMessage } from '../api/types';
 
+const API_PREFIX = '/api/v1';
+
+const normalizeApiUrl = (url?: string): string => {
+    const trimmed = (url ?? '').trim();
+    if (!trimmed) {
+        return API_PREFIX;
+    }
+    return trimmed.replace(/\/+$/, '');
+};
+
+const DEFAULT_API_URL = normalizeApiUrl(import.meta.env.VITE_API_URL as string | undefined);
+
 interface SettingsState {
     // Settings
     apiUrl: string;
@@ -21,12 +33,12 @@ export const useSettingsStore = create<SettingsState>()(
     persist(
         (set) => ({
             // Default values
-            apiUrl: '/api/v1',
+            apiUrl: DEFAULT_API_URL,
             theme: 'dark',
             chatHistory: [],
 
             // Actions
-            setApiUrl: (url) => set({ apiUrl: url }),
+            setApiUrl: (url) => set({ apiUrl: normalizeApiUrl(url) }),
 
             toggleTheme: () => set((state) => ({
                 theme: state.theme === 'dark' ? 'light' : 'dark'
@@ -40,6 +52,14 @@ export const useSettingsStore = create<SettingsState>()(
         }),
         {
             name: 'fehres-settings',
+            merge: (persistedState, currentState) => {
+                const incoming = (persistedState as Partial<SettingsState> | undefined) ?? {};
+                return {
+                    ...currentState,
+                    ...incoming,
+                    apiUrl: normalizeApiUrl(incoming.apiUrl),
+                };
+            },
         }
     )
 );

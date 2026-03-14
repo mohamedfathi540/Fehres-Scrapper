@@ -23,9 +23,6 @@ importers:
       react:
         specifier: ^19.0.0
         version: 19.2.4
-      react-aria:
-        specifier: ^3.30.0
-        version: 3.46.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react-aria-components:
         specifier: ^1.0.0
         version: 1.15.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -38,9 +35,6 @@ importers:
       react-router-dom:
         specifier: ^6.28.0
         version: 6.30.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      react-stately:
-        specifier: ^3.30.0
-        version: 3.44.0(react@19.2.4)
       remark-gfm:
         specifier: ^4.0.0
         version: 4.0.1
