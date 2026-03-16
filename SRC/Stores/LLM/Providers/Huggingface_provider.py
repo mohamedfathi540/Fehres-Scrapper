@@ -47,8 +47,8 @@ class HuggingFaceProvider(LLMInterface):
             self.logger.info(f"Initializing local HuggingFace embeddings with model: {model_id}")
             self.local_embedding_client = HuggingFaceEmbeddings(
                 model_name=model_id,
-                # multi_process=False, # Optional: explicit if needed
-                # show_progress=False # Optional
+                multi_process=False,
+                encode_kwargs={'batch_size': 32, 'num_workers': 0}
             )
         except Exception as e:
              self.logger.error(f"Failed to initialize local HuggingFaceEmbeddings: {e}")
