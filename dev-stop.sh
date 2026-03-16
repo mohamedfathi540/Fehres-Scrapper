@@ -71,7 +71,7 @@ free_port 8000
 
 # 3. Stop Docker infra — kill known containers first (handles zombie docker-proxy)
 echo -e "  ${CYAN}Stopping Docker infrastructure...${NC}"
-OLD_CONTAINERS="fastapi frontend nginx pgvector qdrant prometheus grafana postgres_exporter node_exporter fehres-pgvector fehres-qdrant"
+OLD_CONTAINERS="fastapi frontend nginx pgvector qdrant prometheus grafana postgres_exporter node_exporter cloudflared fehres-pgvector fehres-qdrant fehres-nginx fehres-cloudflared"
 for c in $OLD_CONTAINERS; do
     docker stop "$c" 2>/dev/null && docker rm "$c" 2>/dev/null || true
 done

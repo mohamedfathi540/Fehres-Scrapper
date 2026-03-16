@@ -1,19 +1,25 @@
-# Development infrastructure - databases and optional monitoring
-# Backend and frontend run locally for faster iteration
+# Development hybrid infrastructure
+# Docker: pgvector + qdrant + nginx + cloudflared
+# Local: FastAPI + Vite frontend
 
 services:
   # PostgreSQL (PGvector)
   pgvector:
     image: pgvector/pgvector:0.8.0-pg17
     container_name: fehres-pgvector
+    ulimits:
+      core: 0
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
     ports:
       - "5433:5432"
     volumes:
-      - "pgvector_dev:/var/lib/postgresql/data"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: minirag
+      - "pgvector:/var/lib/postgresql/data"
+    env_file:
+      - ./env/.env.postgres
     networks:
       - backend
     restart: unless-stopped
@@ -28,11 +34,62 @@ services:
   qdrant:
     image: qdrant/qdrant:latest
     container_name: fehres-qdrant
+    ulimits:
+      core: 0
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
     ports:
       - "6333:6333"
       - "6334:6334"
     volumes:
-      - "qdrant_dev:/qdrant/storage"
+      - "qdrant_data:/qdrant/storage"
+    networks:
+      - backend
+    restart: unless-stopped
+
+  # Nginx reverse proxy for hybrid mode
+  nginx:
+    image: nginx:latest
+    container_name: fehres-nginx
+    ulimits:
+      core: 0
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    ports:
+      - "8888:80"
+    volumes:
+      - ./Nginx/Default.dev.conf:/etc/nginx/conf.d/default.conf:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - pgvector
+      - qdrant
+    networks:
+      - backend
+    restart: unless-stopped
+
+  # Optional Cloudflare tunnel (requires Docker/env/.env.cloudflared)
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: fehres-cloudflared
+    ulimits:
+      core: 0
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    command: tunnel --no-autoupdate run --token $${TUNNEL_TOKEN}
+    env_file:
+      - ./env/.env.cloudflared
+    depends_on:
+      - nginx
     networks:
       - backend
     restart: unless-stopped
@@ -42,5 +99,5 @@ networks:
     driver: bridge
 
 volumes:
-  pgvector_dev:
-  qdrant_dev:
+  pgvector:
+  qdrant_data:

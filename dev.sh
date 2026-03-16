@@ -35,6 +35,7 @@ FRONTEND_LOG="$PID_DIR/frontend.log"
 COMPOSE_DEV="Docker/docker-compose.dev.yml"
 COMPOSE_FULL="Docker/docker-compose.yml"
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
+NGINX_PORT=8888
 
 mkdir -p "$PID_DIR"
 
@@ -190,7 +191,7 @@ trap cleanup SIGINT SIGTERM
 print_banner
 
 # ── STEP 0: Clean up everything ───────────────────────────────────
-step 0 3 "Preparing environment" "$GEAR"
+step 0 4 "Preparing environment" "$GEAR"
 
 # Kill our own previous processes
 kill_pid_file "$BACKEND_PID"
@@ -198,7 +199,7 @@ kill_pid_file "$FRONTEND_PID"
 
 # Stop and remove ALL known containers (covers zombie docker-proxy cases)
 info "Stopping any existing Docker services..."
-OLD_CONTAINERS="fastapi frontend nginx pgvector qdrant prometheus grafana postgres_exporter node_exporter fehres-pgvector fehres-qdrant"
+OLD_CONTAINERS="fastapi frontend nginx pgvector qdrant prometheus grafana postgres_exporter node_exporter cloudflared fehres-pgvector fehres-qdrant fehres-nginx fehres-cloudflared"
 for c in $OLD_CONTAINERS; do
     docker stop "$c" 2>/dev/null && docker rm "$c" 2>/dev/null || true
 done
@@ -209,6 +210,7 @@ docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" down --remove-orphans 2>/dev/null
 # Try to free the ports we need
 free_port 8000
 free_port 5173
+free_port "$NGINX_PORT"
 
 # Brief pause to let sockets release
 sleep 1
@@ -216,13 +218,14 @@ sleep 1
 # Strict check — ports MUST be free before we proceed
 require_port_free 8000 "FastAPI backend"
 require_port_free 5173 "Vite frontend"
+require_port_free "$NGINX_PORT" "Nginx reverse proxy"
 
 success "Environment is clean"
 
 # ── STEP 1: Docker infrastructure ─────────────────────────────────
-step 1 3 "Starting database infrastructure" "$DB"
+step 1 4 "Starting hybrid Docker services" "$DB"
 
-info "Starting pgvector + Qdrant via Docker..."
+info "Starting pgvector + Qdrant + Nginx (+ Cloudflare if configured) via Docker..."
 docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" up -d 2>&1 | tail -8
 
 # Wait for PostgreSQL to be healthy
@@ -250,8 +253,45 @@ else
     warn "Qdrant may not be fully ready yet"
 fi
 
+# Check Nginx reverse proxy
+nginx_waited=0
+while ! curl -sf "http://localhost:${NGINX_PORT}" >/dev/null 2>&1 && [ $nginx_waited -lt 30 ]; do
+    sleep 1
+    nginx_waited=$((nginx_waited + 1))
+done
+if [ $nginx_waited -lt 30 ]; then
+    success "Nginx reverse proxy is ready on :${NGINX_PORT}  (${nginx_waited}s)"
+else
+    err "Nginx did not become ready on :${NGINX_PORT}"
+    docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" logs --tail=40 nginx 2>/dev/null | sed 's/^/        /' || true
+    exit 1
+fi
+
+# Cloudflare tunnel startup/status (optional)
+if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files 2>/dev/null | grep -q '^cloudflared\.service'; then
+    info "Ensuring host cloudflared service is running..."
+    systemctl start cloudflared >/dev/null 2>&1 || true
+    sleep 1
+    if systemctl is-active --quiet cloudflared; then
+        success "Cloudflare tunnel is running via systemd (host)"
+    else
+        warn "Host cloudflared service exists but is not active"
+    fi
+elif docker ps --format '{{.Names}}' | grep -q '^fehres-cloudflared$'; then
+    success "Cloudflare tunnel container is running"
+else
+    info "Trying to start cloudflared via Docker compose..."
+    docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" up -d cloudflared >/dev/null 2>&1 || true
+    sleep 1
+    if docker ps --format '{{.Names}}' | grep -q '^fehres-cloudflared$'; then
+        success "Cloudflare tunnel container is running"
+    else
+        warn "Cloudflare tunnel is not running (check Docker/env/.env.cloudflared token)"
+    fi
+fi
+
 # ── STEP 3: Backend ───────────────────────────────────────────────
-step 2 3 "Starting FastAPI backend" "$BOLT"
+step 2 4 "Starting FastAPI backend" "$BOLT"
 
 cd "$PROJECT_ROOT/SRC"
 
@@ -273,7 +313,7 @@ fi
 cd "$PROJECT_ROOT"
 
 # ── STEP 4: Frontend ──────────────────────────────────────────────
-step 3 3 "Starting Vite frontend" "$GLOBE"
+step 3 4 "Starting Vite frontend" "$GLOBE"
 
 cd "$PROJECT_ROOT/frontend"
 
@@ -305,6 +345,7 @@ echo -e "  ║              ${SPARKLE}  ${NC}${GREEN}${BOLD}Fehres is LIVE${NC}$
 echo "  ╠══════════════════════════════════════════════════════════╣"
 echo -e "  ║                                                          ║"
 echo -e "  ║  ${NC}${CYAN} Frontend  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:5173${NC}               ${GREEN}   ║"
+echo -e "  ║  ${NC}${CYAN} Nginx     ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:${NGINX_PORT}${NC}               ${GREEN}   ║"
 echo -e "  ║  ${NC}${CYAN} API Docs  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:8000/docs${NC}          ${GREEN}   ║"
 echo -e "  ║  ${NC}${CYAN} Postgres  ${NC}${GREEN}→${NC}  ${BOLD}localhost:5433${NC}                      ${GREEN}   ║"
 echo -e "  ║  ${NC}${CYAN} Qdrant    ${NC}${GREEN}→${NC}  ${BOLD}localhost:6333${NC}                      ${GREEN}   ║"

@@ -92,6 +92,16 @@ class settings (BaseSettings):
     SCRAPING_EMBED_DURING : bool = False
     SCRAPING_AUTO_INDEX : bool = True
 
+    # Authentication / JWT
+    JWT_SECRET : Optional[str] = None
+    JWT_EXPIRE_MINUTES : int = 60
+
+    # Email service
+    BREVO_API_KEY : Optional[str] = None
+    SENDER_EMAIL : Optional[str] = None
+    SENDER_NAME : Optional[str] = None
+    FRONTEND_URL : Optional[str] = None
+
     # Default project ID for single-project system
     DEFAULT_PROJECT_ID : int = 1
 
