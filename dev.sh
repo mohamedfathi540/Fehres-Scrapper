@@ -150,6 +150,36 @@ wait_for_port() {
     success "$name is live on port $port  (${waited}s)"
 }
 
+wait_for_backend() {
+    local port=${1:-8000}
+    local max_wait=${2:-300}
+    local waited=0
+
+    while [ $waited -lt $max_wait ]; do
+        if ss -tlnH 2>/dev/null | grep -q ":${port} "; then
+            success "FastAPI backend is live on port ${port}  (${waited}s)"
+            return 0
+        fi
+
+        # Fail early if reloader/main process already died.
+        if [ -f "$BACKEND_PID" ]; then
+            local pid
+            pid=$(cat "$BACKEND_PID" 2>/dev/null)
+            if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
+                err "FastAPI backend process exited before binding port ${port}"
+                return 1
+            fi
+        fi
+
+        sleep 1
+        waited=$((waited + 1))
+    done
+
+    err "FastAPI backend did not start on port ${port} within ${max_wait}s"
+    echo -e "        ${DIM}Check logs: cat $BACKEND_LOG${NC}"
+    return 1
+}
+
 # ── Cleanup on exit ───────────────────────────────────────────────
 
 cleanup() {
@@ -317,6 +347,10 @@ step 2 4 "Starting FastAPI backend" "$BOLT"
 
 cd "$PROJECT_ROOT/SRC"
 
+# Ensure stale uvicorn instances from previous runs do not interfere.
+pkill -f "uvicorn main:app --host 0.0.0.0 --port 8000" 2>/dev/null || true
+sleep 0.5
+
 # Ensure deps
 info "Syncing Python dependencies with uv..."
 uv sync --quiet 2>&1 || true
@@ -326,9 +360,12 @@ info "Launching uvicorn on :8000 with hot-reload..."
 uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload > "$BACKEND_LOG" 2>&1 &
 echo $! > "$BACKEND_PID"
 
-if ! wait_for_port 8000 "FastAPI backend" 120; then
+BACKEND_WAIT_TIMEOUT=${BACKEND_WAIT_TIMEOUT:-300}
+if ! wait_for_backend 8000 "$BACKEND_WAIT_TIMEOUT"; then
     err "Backend failed to start. Last 15 lines of log:"
     tail -15 "$BACKEND_LOG" 2>/dev/null | sed 's/^/        /'
+    info "Backend processes:"
+    ps -ef | grep -E "uvicorn|main:app|watchfiles" | grep -v grep | sed 's/^/        /' || true
     exit 1
 fi
 
