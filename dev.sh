@@ -271,12 +271,18 @@ fi
 
 # Check Nginx reverse proxy
 nginx_waited=0
-while ! curl -sf "http://localhost:${NGINX_PORT}" >/dev/null 2>&1 && [ $nginx_waited -lt 30 ]; do
+nginx_code="000"
+while [ $nginx_waited -lt 30 ]; do
+    # In hybrid mode, upstream services may still be booting, so 502 is acceptable here.
+    nginx_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${NGINX_PORT}" 2>/dev/null || echo "000")
+    if [ "$nginx_code" != "000" ]; then
+        break
+    fi
     sleep 1
     nginx_waited=$((nginx_waited + 1))
 done
 if [ $nginx_waited -lt 30 ]; then
-    success "Nginx reverse proxy is ready on :${NGINX_PORT}  (${nginx_waited}s)"
+    success "Nginx reverse proxy is reachable on :${NGINX_PORT}  (HTTP ${nginx_code}, ${nginx_waited}s)"
 else
     err "Nginx did not become ready on :${NGINX_PORT}"
     docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" logs --tail=40 nginx 2>/dev/null | sed 's/^/        /' || true
