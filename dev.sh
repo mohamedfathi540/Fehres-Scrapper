@@ -230,13 +230,29 @@ docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" up -d 2>&1 | tail -8
 
 # Wait for PostgreSQL to be healthy
 info "Waiting for PostgreSQL to accept connections..."
+PG_WAIT_TIMEOUT=${PG_WAIT_TIMEOUT:-180}
 pg_waited=0
-while ! docker exec fehres-pgvector pg_isready -U postgres >/dev/null 2>&1 && [ $pg_waited -lt 60 ]; do
+while [ $pg_waited -lt "$PG_WAIT_TIMEOUT" ]; do
+    # Prefer container health status when available.
+    pg_health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}unknown{{end}}' fehres-pgvector 2>/dev/null || echo "missing")
+
+    if [ "$pg_health" = "healthy" ] || docker exec fehres-pgvector pg_isready -h 127.0.0.1 -U postgres -d minirag >/dev/null 2>&1; then
+        break
+    fi
+
+    # Fail fast when healthcheck explicitly reports an unhealthy container.
+    if [ "$pg_health" = "unhealthy" ]; then
+        break
+    fi
+
     sleep 1
     pg_waited=$((pg_waited + 1))
 done
-if [ $pg_waited -ge 60 ]; then
-    err "PostgreSQL failed to become healthy in 60s"
+if [ $pg_waited -ge "$PG_WAIT_TIMEOUT" ] || [ "$pg_health" = "unhealthy" ]; then
+    err "PostgreSQL failed to become healthy in ${PG_WAIT_TIMEOUT}s"
+    docker ps --filter name=fehres-pgvector --format '        {{.Names}} {{.Status}}' 2>/dev/null || true
+    info "Last 40 lines from pgvector logs:"
+    docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" logs --tail=40 pgvector 2>/dev/null | sed 's/^/        /' || true
     exit 1
 fi
 success "PostgreSQL (pgvector) is ready on :5433  (${pg_waited}s)"
