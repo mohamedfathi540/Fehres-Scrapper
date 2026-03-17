@@ -85,6 +85,8 @@ services:
         limits:
           cpus: '0.5'
           memory: 512M
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command: tunnel --no-autoupdate run --token $${TUNNEL_TOKEN}
     env_file:
       - ./env/.env.cloudflared

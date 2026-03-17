@@ -382,8 +382,7 @@ pnpm install --frozen-lockfile --silent 2>&1 || pnpm install --silent 2>&1 || tr
 
 # Launch Vite with strict port so it fails instead of silently switching
 info "Launching Vite on :5173 with HMR..."
-pnpm dev -- --port 5173 --strictPort > "$FRONTEND_LOG" 2>&1 &
-echo $! > "$FRONTEND_PID"
+pnpm dev -- --host --port 5173 --strictPort > "$FRONTEND_LOG" 2>&1 &echo $! > "$FRONTEND_PID"
 
 if ! wait_for_port 5173 "Vite frontend" 30; then
     err "Frontend failed to start. Last 15 lines of log:"
@@ -399,17 +398,17 @@ cd "$PROJECT_ROOT"
 
 echo ""
 echo -e "  ${GREEN}${BOLD}"
-echo "  ╔══════════════════════════════════════════════════════════╗"
+echo "  ╔═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗"
 echo -e "  ║              ${SPARKLE}  ${NC}${GREEN}${BOLD}Fehres is LIVE${NC}${GREEN}${BOLD}  ${SPARKLE}                        ║"
-echo "  ╠══════════════════════════════════════════════════════════╣"
-echo -e "  ║                                                          ║"
-echo -e "  ║  ${NC}${CYAN} Frontend  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:5173${NC}               ${GREEN}   ║"
-echo -e "  ║  ${NC}${CYAN} Nginx     ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:${NGINX_PORT}${NC}               ${GREEN}   ║"
-echo -e "  ║  ${NC}${CYAN} API Docs  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:8000/docs${NC}          ${GREEN}   ║"
-echo -e "  ║  ${NC}${CYAN} Postgres  ${NC}${GREEN}→${NC}  ${BOLD}localhost:5433${NC}                      ${GREEN}   ║"
-echo -e "  ║  ${NC}${CYAN} Qdrant    ${NC}${GREEN}→${NC}  ${BOLD}localhost:6333${NC}                      ${GREEN}   ║"
-echo -e "  ║                                                          ║"
-echo -e "  ${GREEN}╚══════════════════════════════════════════════════════════╝${NC}"
+echo "  ╠═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╣"
+echo -e "  ║                                                                                                                    ║"
+echo -e "  ║  ${NC}${CYAN} Frontend  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:5173${NC}               ${GREEN}              ║"
+echo -e "  ║  ${NC}${CYAN} Nginx     ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:${NGINX_PORT}${NC}               ${GREEN}     ║"
+echo -e "  ║  ${NC}${CYAN} API Docs  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:8000/docs${NC}          ${GREEN}              ║"
+echo -e "  ║  ${NC}${CYAN} Postgres  ${NC}${GREEN}→${NC}  ${BOLD}localhost:5433${NC}                      ${GREEN}              ║"
+echo -e "  ║  ${NC}${CYAN} Qdrant    ${NC}${GREEN}→${NC}  ${BOLD}localhost:6333${NC}                      ${GREEN}              ║"
+echo -e "  ║                                                                                                                    ║"
+echo -e "  ${GREEN}╚════════════════════════════════════════════════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "  ${DIM}Press ${BOLD}Ctrl+C${NC}${DIM} to stop all services${NC}"
 echo ""
