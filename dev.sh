@@ -382,7 +382,8 @@ pnpm install --frozen-lockfile --silent 2>&1 || pnpm install --silent 2>&1 || tr
 
 # Launch Vite with strict port so it fails instead of silently switching
 info "Launching Vite on :5173 with HMR..."
-pnpm dev -- --host --port 5173 --strictPort > "$FRONTEND_LOG" 2>&1 &echo $! > "$FRONTEND_PID"
+pnpm dev -- --port 5173 --strictPort > "$FRONTEND_LOG" 2>&1 &
+echo $! > "$FRONTEND_PID"
 
 if ! wait_for_port 5173 "Vite frontend" 30; then
     err "Frontend failed to start. Last 15 lines of log:"
@@ -408,7 +409,7 @@ echo -e "  ║  ${NC}${CYAN} API Docs  ${NC}${GREEN}→${NC}  ${BOLD}http://loca
 echo -e "  ║  ${NC}${CYAN} Postgres  ${NC}${GREEN}→${NC}  ${BOLD}localhost:5433${NC}                      ${GREEN}              ║"
 echo -e "  ║  ${NC}${CYAN} Qdrant    ${NC}${GREEN}→${NC}  ${BOLD}localhost:6333${NC}                      ${GREEN}              ║"
 echo -e "  ║                                                                                                                    ║"
-echo -e "  ${GREEN}╚════════════════════════════════════════════════════════════════════════════════════════════════════════════╝${NC}"
+echo -e "  ${GREEN}╚══════════════════════════════════════════════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "  ${DIM}Press ${BOLD}Ctrl+C${NC}${DIM} to stop all services${NC}"
 echo ""
