@@ -365,7 +365,7 @@ uv sync --quiet 2>&1 || true
 
 # Launch uvicorn
 info "Launching uvicorn on :8000 with hot-reload..."
-uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload > "$BACKEND_LOG" 2>&1 &
+nohup uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload > "$BACKEND_LOG" 2>&1 &
 echo $! > "$BACKEND_PID"
 
 BACKEND_WAIT_TIMEOUT=${BACKEND_WAIT_TIMEOUT:-300}
@@ -390,7 +390,7 @@ pnpm install --frozen-lockfile --silent 2>&1 || pnpm install --silent 2>&1 || tr
 
 # Launch Vite with strict port so it fails instead of silently switching
 info "Launching Vite on :5173 with HMR..."
-npx vite --host --port 5173 --strictPort > "$FRONTEND_LOG" 2>&1 &
+nohup npx vite --host --port 5173 --strictPort > "$FRONTEND_LOG" 2>&1 &
 echo $! > "$FRONTEND_PID"
 
 if ! wait_for_port 5173 "Vite frontend" 30; then
