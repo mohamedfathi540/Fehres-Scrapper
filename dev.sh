@@ -36,6 +36,14 @@ COMPOSE_DEV="Docker/docker-compose.dev.yml"
 COMPOSE_FULL="Docker/docker-compose.yml"
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 NGINX_PORT=8888
+DETACH=false
+
+# ── Parse flags ────────────────────────────────────────────────────
+for arg in "$@"; do
+    case "$arg" in
+        -d|--detach) DETACH=true ;;
+    esac
+done
 
 mkdir -p "$PID_DIR"
 
@@ -411,6 +419,14 @@ echo -e "  ║  ${NC}${CYAN} Qdrant    ${NC}${GREEN}→${NC}  ${BOLD}localhost:6
 echo -e "  ║                                                                                                                    ║"
 echo -e "  ${GREEN}╚══════════════════════════════════════════════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
+
+if $DETACH; then
+    echo -e "  ${DIM}Running in detached mode. Logs: ${BOLD}$BACKEND_LOG${NC} ${DIM}and${NC} ${BOLD}$FRONTEND_LOG${NC}"
+    echo -e "  ${DIM}Stop with: ${BOLD}./dev.sh stop${NC}  ${DIM}or${NC}  ${BOLD}kill \$(cat $BACKEND_PID) \$(cat $FRONTEND_PID)${NC}"
+    echo ""
+    exit 0
+fi
+
 echo -e "  ${DIM}Press ${BOLD}Ctrl+C${NC}${DIM} to stop all services${NC}"
 echo ""
 
