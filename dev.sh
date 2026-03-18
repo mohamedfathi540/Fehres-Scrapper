@@ -382,7 +382,7 @@ pnpm install --frozen-lockfile --silent 2>&1 || pnpm install --silent 2>&1 || tr
 
 # Launch Vite with strict port so it fails instead of silently switching
 info "Launching Vite on :5173 with HMR..."
-pnpm dev -- --port 5173 --strictPort > "$FRONTEND_LOG" 2>&1 &
+pnpm dev -- --host --port 5173 --strictPort > "$FRONTEND_LOG" 2>&1 &
 echo $! > "$FRONTEND_PID"
 
 if ! wait_for_port 5173 "Vite frontend" 30; then
