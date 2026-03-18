@@ -36,15 +36,6 @@ COMPOSE_DEV="Docker/docker-compose.dev.yml"
 COMPOSE_FULL="Docker/docker-compose.yml"
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 NGINX_PORT=8888
-DETACH=true
-
-# ── Parse flags ────────────────────────────────────────────────────
-for arg in "$@"; do
-    case "$arg" in
-        -f|--foreground) DETACH=false ;;
-        -d|--detach) DETACH=true ;;
-    esac
-done
 
 mkdir -p "$PID_DIR"
 
@@ -196,7 +187,7 @@ cleanup() {
     echo ""
     echo -e "  ${YELLOW}${BOLD}"
     echo "  ╔══════════════════════════════════════════════╗"
-    echo "  ║       ${STOP}  Shutting down Fehres...             ║"
+    echo "  ║       ${STOP}  Shutting down Fehres...            ║"
     echo "  ╚══════════════════════════════════════════════╝"
     echo -e "  ${NC}"
 
@@ -214,8 +205,6 @@ cleanup() {
     docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" down 2>/dev/null || true
     info "Docker infrastructure stopped"
 
-    # Cleanup temp logs (optional: keep them for debugging if desired, but script traditionally cleans up)
-    # rm -f "$BACKEND_LOG" "$FRONTEND_LOG"
     echo ""
     echo -e "  ${GREEN}${CHECK} All services stopped cleanly.${NC}"
     echo ""
@@ -226,7 +215,7 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # ══════════════════════════════════════════════════════════════════
-#                          MAIN FLOW
+#                         MAIN FLOW
 # ══════════════════════════════════════════════════════════════════
 
 print_banner
@@ -238,7 +227,7 @@ step 0 4 "Preparing environment" "$GEAR"
 kill_pid_file "$BACKEND_PID"
 kill_pid_file "$FRONTEND_PID"
 
-# Stop and remove ALL known containers (covers zombie docker-proxy cases)
+# Stop and remove ALL known containers
 info "Stopping any existing Docker services..."
 OLD_CONTAINERS="fastapi frontend nginx pgvector qdrant prometheus grafana postgres_exporter node_exporter cloudflared fehres-pgvector fehres-qdrant fehres-nginx fehres-cloudflared"
 for c in $OLD_CONTAINERS; do
@@ -274,14 +263,12 @@ info "Waiting for PostgreSQL to accept connections..."
 PG_WAIT_TIMEOUT=${PG_WAIT_TIMEOUT:-180}
 pg_waited=0
 while [ $pg_waited -lt "$PG_WAIT_TIMEOUT" ]; do
-    # Prefer container health status when available.
     pg_health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}unknown{{end}}' fehres-pgvector 2>/dev/null || echo "missing")
 
     if [ "$pg_health" = "healthy" ] || docker exec fehres-pgvector pg_isready -h 127.0.0.1 -U postgres -d minirag >/dev/null 2>&1; then
         break
     fi
 
-    # Fail fast when healthcheck explicitly reports an unhealthy container.
     if [ "$pg_health" = "unhealthy" ]; then
         break
     fi
@@ -314,7 +301,6 @@ fi
 nginx_waited=0
 nginx_code="000"
 while [ $nginx_waited -lt 30 ]; do
-    # In hybrid mode, upstream services may still be booting, so 502 is acceptable here.
     nginx_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${NGINX_PORT}" 2>/dev/null || echo "000")
     if [ "$nginx_code" != "000" ]; then
         break
@@ -330,7 +316,7 @@ else
     exit 1
 fi
 
-# Cloudflare tunnel startup/status (optional)
+# Cloudflare tunnel startup/status
 if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files 2>/dev/null | grep -q '^cloudflared\.service'; then
     info "Ensuring host cloudflared service is running..."
     systemctl start cloudflared >/dev/null 2>&1 || true
@@ -370,9 +356,9 @@ uv sync --quiet 2>&1 || true
 info "Applying database migrations..."
 uv run alembic upgrade head || warn "Database migrations failed, please check."
 
-# Launch uvicorn — Truly background and detach it
+# Launch uvicorn — Truly background and detach it with </dev/null up front
 info "Launching uvicorn on :8000 with hot-reload..."
-nohup uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload > "$BACKEND_LOG" 2>&1 < /dev/null &
+nohup uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload </dev/null > "$BACKEND_LOG" 2>&1 &
 BACK_PID=$!
 echo $BACK_PID > "$BACKEND_PID"
 disown $BACK_PID
@@ -397,9 +383,9 @@ cd "$PROJECT_ROOT/frontend"
 info "Installing frontend dependencies..."
 pnpm install --frozen-lockfile --silent 2>&1 || pnpm install --silent 2>&1 || true
 
-# Launch Vite — Truly background and detach it
+# Launch Vite — Truly background and detach it with </dev/null up front
 info "Launching Vite on :5173 with HMR..."
-nohup npx vite --host --port 5173 --strictPort > "$FRONTEND_LOG" 2>&1 < /dev/null &
+nohup npx vite --host --port 5173 --strictPort </dev/null > "$FRONTEND_LOG" 2>&1 &
 FRONT_PID=$!
 echo $FRONT_PID > "$FRONTEND_PID"
 disown $FRONT_PID
@@ -413,40 +399,33 @@ fi
 cd "$PROJECT_ROOT"
 
 # ══════════════════════════════════════════════════════════════════
-#                      DASHBOARD
+#                     DASHBOARD & DETACH
 # ══════════════════════════════════════════════════════════════════
 
 echo ""
 echo -e "  ${GREEN}${BOLD}"
 echo "  ╔═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗"
-echo -e "  ║              ${SPARKLE}  ${NC}${GREEN}${BOLD}Fehres is LIVE${NC}${GREEN}${BOLD}  ${SPARKLE}                        ║"
+echo -e "  ║              ${SPARKLE}  ${NC}${GREEN}${BOLD}Fehres is LIVE${NC}${GREEN}${BOLD}  ${SPARKLE}                                                                                     ║"
 echo "  ╠═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╣"
-echo -e "  ║                                                                                                                    ║"
-echo -e "  ║  ${NC}${CYAN} Frontend  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:5173${NC}               ${GREEN}              ║"
-echo -e "  ║  ${NC}${CYAN} Nginx     ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:${NGINX_PORT}${NC}               ${GREEN}     ║"
-echo -e "  ║  ${NC}${CYAN} API Docs  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:8000/docs${NC}          ${GREEN}              ║"
-echo -e "  ║  ${NC}${CYAN} Postgres  ${NC}${GREEN}→${NC}  ${BOLD}localhost:5433${NC}                      ${GREEN}              ║"
-echo -e "  ║  ${NC}${CYAN} Qdrant    ${NC}${GREEN}→${NC}  ${BOLD}localhost:6333${NC}                      ${GREEN}              ║"
-echo -e "  ║                                                                                                                    ║"
+echo -e "  ║                                                                                                                       ║"
+echo -e "  ║  ${NC}${CYAN} Frontend  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:5173${NC}               ${GREEN}               ║"
+echo -e "  ║  ${NC}${CYAN} Nginx     ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:${NGINX_PORT}${NC}               ${GREEN}       ║"
+echo -e "  ║  ${NC}${CYAN} API Docs  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:8000/docs${NC}          ${GREEN}               ║"
+echo -e "  ║  ${NC}${CYAN} Postgres  ${NC}${GREEN}→${NC}  ${BOLD}localhost:5433${NC}                      ${GREEN}               ║"
+echo -e "  ║  ${NC}${CYAN} Qdrant    ${NC}${GREEN}→${NC}  ${BOLD}localhost:6333${NC}                      ${GREEN}               ║"
+echo -e "  ║                                                                                                                       ║"
 echo -e "  ${GREEN}╚══════════════════════════════════════════════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-if $DETACH; then
-    echo -e "  ${DIM}Running in detached mode. Logs: ${BOLD}$BACKEND_LOG${NC} ${DIM}and${NC} ${BOLD}$FRONTEND_LOG${NC}"
-    echo -e "  ${DIM}Stop with: ${BOLD}./dev.sh stop${NC}  ${DIM}or${NC}  ${BOLD}kill \$(cat $BACKEND_PID) \$(cat $FRONTEND_PID)${NC}"
-    echo ""
-    exit 0
-fi
-
-echo -e "  ${DIM}Press ${BOLD}Ctrl+C${NC}${DIM} to stop all services${NC}"
+echo -e "  ${DIM}Running in detached mode. Logs: ${BOLD}$BACKEND_LOG${NC} ${DIM}and${NC} ${BOLD}$FRONTEND_LOG${NC}"
+echo -e "  ${DIM}Stop manually with: ${BOLD}kill \$(cat $BACKEND_PID) \$(cat $FRONTEND_PID)${NC}"
 echo ""
 
-# ── Tail logs ──────────────────────────────────────────────────────
-echo -e "  ${MAGENTA}${BOLD}═══ Live Logs ════════════════════════════════════${NC}"
-echo ""
+# Disown all background jobs so they survive shell exit/SIGHUP
+disown -a 2>/dev/null || true
 
-tail -f "$BACKEND_LOG" "$FRONTEND_LOG" 2>/dev/null &
-TAIL_PID=$!
+# Disable the cleanup trap so exiting dev.sh doesn't accidentally kill the processes
+trap - SIGINT SIGTERM
 
-# Wait forever (until Ctrl+C triggers cleanup)
-wait $TAIL_PID 2>/dev/null || true
+echo -e "${GREEN}${BOLD}  ✅ Setup complete. You can safely close this terminal. ✨${NC}\n"
+exit 0
