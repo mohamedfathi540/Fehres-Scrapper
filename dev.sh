@@ -36,11 +36,12 @@ COMPOSE_DEV="Docker/docker-compose.dev.yml"
 COMPOSE_FULL="Docker/docker-compose.yml"
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 NGINX_PORT=8888
-DETACH=false
+DETACH=true
 
 # ── Parse flags ────────────────────────────────────────────────────
 for arg in "$@"; do
     case "$arg" in
+        -f|--foreground) DETACH=false ;;
         -d|--detach) DETACH=true ;;
     esac
 done
@@ -362,6 +363,10 @@ sleep 0.5
 # Ensure deps
 info "Syncing Python dependencies with uv..."
 uv sync --quiet 2>&1 || true
+
+# Run database migrations
+info "Applying database migrations..."
+uv run alembic upgrade head || warn "Database migrations failed, please check."
 
 # Launch uvicorn
 info "Launching uvicorn on :8000 with hot-reload..."
