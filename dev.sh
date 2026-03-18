@@ -16,6 +16,8 @@ BOLD='\033[1m'
 DIM='\033[2m'
 NC='\033[0m'
 
+export COMPOSE_PROJECT_NAME=fehres
+
 CHECK="✅"
 ROCKET="🚀"
 FIRE="🔥"
