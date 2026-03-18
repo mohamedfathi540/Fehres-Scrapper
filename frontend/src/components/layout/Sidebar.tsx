@@ -13,6 +13,7 @@ import { useSettingsStore } from "../../stores/settingsStore";
 import { useAuthStore } from "../../stores/authStore";
 import { StatusBadge } from "../ui/StatusBadge";
 import { Button } from "../ui/Button";
+import { QuotaPanel } from "../ui/QuotaPanel";
 import { checkHealth } from "../../api/base";
 
 const navigation = [
@@ -113,6 +114,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             </button>
           </div>
         )}
+        {/* Quota usage panel */}
+        <QuotaPanel />
         <div className="flex items-center justify-between gap-2">
           <StatusBadge
             status={apiStatus}

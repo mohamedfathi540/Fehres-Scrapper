@@ -11,6 +11,7 @@ from pathlib import Path
 from Helpers.Config import get_settings,settings
 from Controllers import datacontroller ,projectcontroller ,processcontroller,NLPController
 from Controllers.ScrapingController import ScrapingController
+from Controllers.SecurityController import require_quota
 import aiofiles
 from Models import ResponseSignal
 import logging
@@ -1012,7 +1013,8 @@ async def get_scrape_progress(base_url: str = Query(..., description="The base U
 async def scrape_documentation(
     request: Request,
     scrape_request: ScrapeRequest,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    _user=Depends(require_quota("scrape")),
 ):
     """
     Scrape library documentation from a base URL (Runs in background).

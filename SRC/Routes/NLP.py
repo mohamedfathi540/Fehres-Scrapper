@@ -1,10 +1,11 @@
-from fastapi import FastAPI,APIRouter,status,Request
+from fastapi import FastAPI,APIRouter,status,Request,Depends
 from fastapi.responses import JSONResponse
 import logging
 from .Schemes.NLP_Schemes import PushRequest , SearchRequest 
 from Models.Project_Model import projectModel 
 from Models.Chunk_Model import ChunkModel
 from Controllers.NLPController import NLPController
+from Controllers.SecurityController import require_quota
 from Models.enums.ResponsEnums import ResponseSignal
 from Helpers.Config import get_settings
 from tqdm.auto import tqdm
@@ -137,7 +138,7 @@ async def get_project_index_info (request :Request, project_name: str | None = N
 
 
 @nlp_router.post("/index/search")
-async def search_index(request :Request , search_request : SearchRequest) :
+async def search_index(request :Request , search_request : SearchRequest, _user=Depends(require_quota("query"))) :
 
     settings = get_settings()
     default_project_id = settings.DEFAULT_PROJECT_ID
@@ -179,7 +180,7 @@ async def search_index(request :Request , search_request : SearchRequest) :
 
 
 @nlp_router.post("/index/answer")
-async def answer_index(request :Request , search_request : SearchRequest) :
+async def answer_index(request :Request , search_request : SearchRequest, _user=Depends(require_quota("query"))) :
 
     settings = get_settings()
     default_project_id = settings.DEFAULT_PROJECT_ID

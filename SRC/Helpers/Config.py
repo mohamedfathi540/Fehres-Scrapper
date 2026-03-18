@@ -105,6 +105,10 @@ class settings (BaseSettings):
     # Default project ID for single-project system
     DEFAULT_PROJECT_ID : int = 1
 
+    # Daily quota limits per user (0 = unlimited)
+    QUOTA_DAILY_QUERIES : int = 0
+    QUOTA_DAILY_SCRAPES : int = 0
+
     @field_validator("SCRAPING_DEBUG", "SCRAPING_USE_BROWSER", "SCRAPING_IGNORE_ROBOTS", "SCRAPING_AUTO_INDEX", mode="before")
     @classmethod
     def parse_scraping_bool(cls, v):
