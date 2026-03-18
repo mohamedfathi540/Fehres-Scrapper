@@ -48,21 +48,6 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_user_usage_quotas_id'), 'user_usage_quotas', ['id'], unique=False)
     op.create_index(op.f('ix_user_usage_quotas_user_id'), 'user_usage_quotas', ['user_id'], unique=False)
-    op.drop_table('collection_384_70')
-    op.drop_table('collection_384_62')
-    op.drop_index('collection_384_61_vector_idx', table_name='collection_384_61', postgresql_using='hnsw')
-    op.drop_table('collection_384_61')
-    op.drop_table('collection_384_68')
-    op.drop_table('collection_384_72')
-    op.drop_table('collection_384_64')
-    op.drop_table('collection_384_69')
-    op.drop_index('collection_384_67_vector_idx', table_name='collection_384_67', postgresql_using='hnsw')
-    op.drop_table('collection_384_67')
-    op.drop_table('collection_384_71')
-    op.drop_index('collection_384_65_vector_idx', table_name='collection_384_65', postgresql_using='hnsw')
-    op.drop_table('collection_384_65')
-    op.drop_table('collection_384_66')
-    op.drop_table('collection_384_63')
     # ### end Alembic commands ###
 
 
@@ -78,117 +63,6 @@ def downgrade() -> None:
     op.drop_column('users', 'user_id')
     op.drop_constraint(None, 'projects', type_='unique')
     op.drop_column('projects', 'project_name')
-    op.create_table('collection_384_63',
-    sa.Column('id', sa.BIGINT(), autoincrement=True, nullable=False),
-    sa.Column('text', sa.TEXT(), autoincrement=False, nullable=True),
-    sa.Column('vectors', sa.NullType(), autoincrement=False, nullable=True),
-    sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), server_default=sa.text("'{}'::jsonb"), autoincrement=False, nullable=True),
-    sa.Column('chunk_id', sa.INTEGER(), autoincrement=False, nullable=True),
-    sa.ForeignKeyConstraint(['chunk_id'], ['chunks.chunk_id'], name='collection_384_63_chunk_id_fkey'),
-    sa.PrimaryKeyConstraint('id', name='collection_384_63_pkey')
-    )
-    op.create_table('collection_384_66',
-    sa.Column('id', sa.BIGINT(), autoincrement=True, nullable=False),
-    sa.Column('text', sa.TEXT(), autoincrement=False, nullable=True),
-    sa.Column('vectors', sa.NullType(), autoincrement=False, nullable=True),
-    sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), server_default=sa.text("'{}'::jsonb"), autoincrement=False, nullable=True),
-    sa.Column('chunk_id', sa.INTEGER(), autoincrement=False, nullable=True),
-    sa.ForeignKeyConstraint(['chunk_id'], ['chunks.chunk_id'], name='collection_384_66_chunk_id_fkey'),
-    sa.PrimaryKeyConstraint('id', name='collection_384_66_pkey')
-    )
-    op.create_table('collection_384_65',
-    sa.Column('id', sa.BIGINT(), autoincrement=True, nullable=False),
-    sa.Column('text', sa.TEXT(), autoincrement=False, nullable=True),
-    sa.Column('vectors', sa.NullType(), autoincrement=False, nullable=True),
-    sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), server_default=sa.text("'{}'::jsonb"), autoincrement=False, nullable=True),
-    sa.Column('chunk_id', sa.INTEGER(), autoincrement=False, nullable=True),
-    sa.ForeignKeyConstraint(['chunk_id'], ['chunks.chunk_id'], name='collection_384_65_chunk_id_fkey'),
-    sa.PrimaryKeyConstraint('id', name='collection_384_65_pkey')
-    )
-    op.create_index('collection_384_65_vector_idx', 'collection_384_65', ['vectors'], unique=False, postgresql_using='hnsw')
-    op.create_table('collection_384_71',
-    sa.Column('id', sa.BIGINT(), autoincrement=True, nullable=False),
-    sa.Column('text', sa.TEXT(), autoincrement=False, nullable=True),
-    sa.Column('vectors', sa.NullType(), autoincrement=False, nullable=True),
-    sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), server_default=sa.text("'{}'::jsonb"), autoincrement=False, nullable=True),
-    sa.Column('chunk_id', sa.INTEGER(), autoincrement=False, nullable=True),
-    sa.ForeignKeyConstraint(['chunk_id'], ['chunks.chunk_id'], name='collection_384_71_chunk_id_fkey'),
-    sa.PrimaryKeyConstraint('id', name='collection_384_71_pkey')
-    )
-    op.create_table('collection_384_67',
-    sa.Column('id', sa.BIGINT(), autoincrement=True, nullable=False),
-    sa.Column('text', sa.TEXT(), autoincrement=False, nullable=True),
-    sa.Column('vectors', sa.NullType(), autoincrement=False, nullable=True),
-    sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), server_default=sa.text("'{}'::jsonb"), autoincrement=False, nullable=True),
-    sa.Column('chunk_id', sa.INTEGER(), autoincrement=False, nullable=True),
-    sa.ForeignKeyConstraint(['chunk_id'], ['chunks.chunk_id'], name='collection_384_67_chunk_id_fkey'),
-    sa.PrimaryKeyConstraint('id', name='collection_384_67_pkey')
-    )
-    op.create_index('collection_384_67_vector_idx', 'collection_384_67', ['vectors'], unique=False, postgresql_using='hnsw')
-    op.create_table('collection_384_69',
-    sa.Column('id', sa.BIGINT(), autoincrement=True, nullable=False),
-    sa.Column('text', sa.TEXT(), autoincrement=False, nullable=True),
-    sa.Column('vectors', sa.NullType(), autoincrement=False, nullable=True),
-    sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), server_default=sa.text("'{}'::jsonb"), autoincrement=False, nullable=True),
-    sa.Column('chunk_id', sa.INTEGER(), autoincrement=False, nullable=True),
-    sa.ForeignKeyConstraint(['chunk_id'], ['chunks.chunk_id'], name='collection_384_69_chunk_id_fkey'),
-    sa.PrimaryKeyConstraint('id', name='collection_384_69_pkey')
-    )
-    op.create_table('collection_384_64',
-    sa.Column('id', sa.BIGINT(), autoincrement=True, nullable=False),
-    sa.Column('text', sa.TEXT(), autoincrement=False, nullable=True),
-    sa.Column('vectors', sa.NullType(), autoincrement=False, nullable=True),
-    sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), server_default=sa.text("'{}'::jsonb"), autoincrement=False, nullable=True),
-    sa.Column('chunk_id', sa.INTEGER(), autoincrement=False, nullable=True),
-    sa.ForeignKeyConstraint(['chunk_id'], ['chunks.chunk_id'], name='collection_384_64_chunk_id_fkey'),
-    sa.PrimaryKeyConstraint('id', name='collection_384_64_pkey')
-    )
-    op.create_table('collection_384_72',
-    sa.Column('id', sa.BIGINT(), autoincrement=True, nullable=False),
-    sa.Column('text', sa.TEXT(), autoincrement=False, nullable=True),
-    sa.Column('vectors', sa.NullType(), autoincrement=False, nullable=True),
-    sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), server_default=sa.text("'{}'::jsonb"), autoincrement=False, nullable=True),
-    sa.Column('chunk_id', sa.INTEGER(), autoincrement=False, nullable=True),
-    sa.ForeignKeyConstraint(['chunk_id'], ['chunks.chunk_id'], name='collection_384_72_chunk_id_fkey'),
-    sa.PrimaryKeyConstraint('id', name='collection_384_72_pkey')
-    )
-    op.create_table('collection_384_68',
-    sa.Column('id', sa.BIGINT(), autoincrement=True, nullable=False),
-    sa.Column('text', sa.TEXT(), autoincrement=False, nullable=True),
-    sa.Column('vectors', sa.NullType(), autoincrement=False, nullable=True),
-    sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), server_default=sa.text("'{}'::jsonb"), autoincrement=False, nullable=True),
-    sa.Column('chunk_id', sa.INTEGER(), autoincrement=False, nullable=True),
-    sa.ForeignKeyConstraint(['chunk_id'], ['chunks.chunk_id'], name='collection_384_68_chunk_id_fkey'),
-    sa.PrimaryKeyConstraint('id', name='collection_384_68_pkey')
-    )
-    op.create_table('collection_384_61',
-    sa.Column('id', sa.BIGINT(), autoincrement=True, nullable=False),
-    sa.Column('text', sa.TEXT(), autoincrement=False, nullable=True),
-    sa.Column('vectors', sa.NullType(), autoincrement=False, nullable=True),
-    sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), server_default=sa.text("'{}'::jsonb"), autoincrement=False, nullable=True),
-    sa.Column('chunk_id', sa.INTEGER(), autoincrement=False, nullable=True),
-    sa.ForeignKeyConstraint(['chunk_id'], ['chunks.chunk_id'], name='collection_384_61_chunk_id_fkey'),
-    sa.PrimaryKeyConstraint('id', name='collection_384_61_pkey')
-    )
-    op.create_index('collection_384_61_vector_idx', 'collection_384_61', ['vectors'], unique=False, postgresql_using='hnsw')
-    op.create_table('collection_384_62',
-    sa.Column('id', sa.BIGINT(), autoincrement=True, nullable=False),
-    sa.Column('text', sa.TEXT(), autoincrement=False, nullable=True),
-    sa.Column('vectors', sa.NullType(), autoincrement=False, nullable=True),
-    sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), server_default=sa.text("'{}'::jsonb"), autoincrement=False, nullable=True),
-    sa.Column('chunk_id', sa.INTEGER(), autoincrement=False, nullable=True),
-    sa.ForeignKeyConstraint(['chunk_id'], ['chunks.chunk_id'], name='collection_384_62_chunk_id_fkey'),
-    sa.PrimaryKeyConstraint('id', name='collection_384_62_pkey')
-    )
-    op.create_table('collection_384_70',
-    sa.Column('id', sa.BIGINT(), autoincrement=True, nullable=False),
-    sa.Column('text', sa.TEXT(), autoincrement=False, nullable=True),
-    sa.Column('vectors', sa.NullType(), autoincrement=False, nullable=True),
-    sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), server_default=sa.text("'{}'::jsonb"), autoincrement=False, nullable=True),
-    sa.Column('chunk_id', sa.INTEGER(), autoincrement=False, nullable=True),
-    sa.ForeignKeyConstraint(['chunk_id'], ['chunks.chunk_id'], name='collection_384_70_chunk_id_fkey'),
-    sa.PrimaryKeyConstraint('id', name='collection_384_70_pkey')
-    )
     op.drop_index(op.f('ix_user_usage_quotas_user_id'), table_name='user_usage_quotas')
     op.drop_index(op.f('ix_user_usage_quotas_id'), table_name='user_usage_quotas')
     op.drop_table('user_usage_quotas')
