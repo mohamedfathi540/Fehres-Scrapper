@@ -150,7 +150,7 @@ wait_for_port() {
 }
 
 wait_for_backend() {
-    local port=${1:-8001}
+    local port=${1:-8000}
     local max_wait=${2:-300}
     local waited=0
 
@@ -192,7 +192,7 @@ cleanup() {
     info "Frontend stopped"
 
     kill_pid_file "$BACKEND_PID"
-    free_port 8001 2>/dev/null || true
+    free_port 8000 2>/dev/null || true
     info "Backend stopped"
 
     docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" down 2>/dev/null || true
@@ -227,15 +227,15 @@ done
 docker compose -f "$PROJECT_ROOT/$COMPOSE_FULL" down --remove-orphans 2>/dev/null || true
 docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" down --remove-orphans 2>/dev/null || true
 
-# FIXED: Swapped 8000 for 8001
-free_port 8001
+# FIXED: Swapped 8000 for 8000
+free_port 8000
 free_port 5173
 free_port "$NGINX_PORT"
 
 sleep 1
 
-# FIXED: Swapped 8000 for 8001
-require_port_free 8001 "FastAPI backend"
+# FIXED: Swapped 8000 for 8000
+require_port_free 8000 "FastAPI backend"
 require_port_free 5173 "Vite frontend"
 require_port_free "$NGINX_PORT" "Nginx reverse proxy"
 
@@ -301,8 +301,8 @@ step 2 4 "Starting FastAPI backend" "$BOLT"
 
 cd "$PROJECT_ROOT/SRC"
 
-# FIXED: Switched kill target to port 8001
-pkill -f "uvicorn main:app --host 0.0.0.0 --port 8001" 2>/dev/null || true
+# FIXED: Switched kill target to port 8000
+pkill -f "uvicorn main:app --host 0.0.0.0 --port 8000" 2>/dev/null || true
 sleep 0.5
 
 info "Syncing Python dependencies with uv..."
@@ -311,15 +311,15 @@ uv sync --quiet 2>&1 || true
 info "Applying database migrations..."
 uv run alembic upgrade head || warn "Database migrations failed, please check."
 
-# FIXED: Uvicorn now starts on port 8001
-info "Launching uvicorn on :8001 with hot-reload..."
-nohup uv run uvicorn main:app --host 0.0.0.0 --port 8001 --reload </dev/null > "$BACKEND_LOG" 2>&1 &
+# FIXED: Uvicorn now starts on port 8000
+info "Launching uvicorn on :8000 with hot-reload..."
+nohup uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload </dev/null > "$BACKEND_LOG" 2>&1 &
 BACK_PID=$!
 echo $BACK_PID > "$BACKEND_PID"
 disown $BACK_PID
 
 BACKEND_WAIT_TIMEOUT=${BACKEND_WAIT_TIMEOUT:-300}
-if ! wait_for_backend 8001 "$BACKEND_WAIT_TIMEOUT"; then
+if ! wait_for_backend 8000 "$BACKEND_WAIT_TIMEOUT"; then
     err "Backend failed to start. Last 15 lines of log:"
     tail -15 "$BACKEND_LOG" 2>/dev/null | sed 's/^/        /'
     exit 1
@@ -360,7 +360,7 @@ echo "  ╠═══════════════════════
 echo -e "  ║                                                                                                                       ║"
 echo -e "  ║  ${NC}${CYAN} Frontend  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:5173${NC}               ${GREEN}               ║"
 echo -e "  ║  ${NC}${CYAN} Nginx     ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:${NGINX_PORT}${NC}               ${GREEN}       ║"
-echo -e "  ║  ${NC}${CYAN} API Docs  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:8001/docs${NC}          ${GREEN}               ║"
+echo -e "  ║  ${NC}${CYAN} API Docs  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:8000/docs${NC}          ${GREEN}               ║"
 echo -e "  ║  ${NC}${CYAN} Postgres  ${NC}${GREEN}→${NC}  ${BOLD}localhost:5433${NC}                      ${GREEN}               ║"
 echo -e "  ║  ${NC}${CYAN} Qdrant    ${NC}${GREEN}→${NC}  ${BOLD}localhost:6333${NC}                      ${GREEN}               ║"
 echo -e "  ║                                                                                                                       ║"
