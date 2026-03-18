@@ -85,6 +85,8 @@ docker compose -f "$PROJECT_ROOT/$COMPOSE_FULL" down --remove-orphans 2>/dev/nul
 
 # 4. Cleanup temp files
 rm -f "$BACKEND_LOG" "$FRONTEND_LOG"
+rm -f "$PROJECT_ROOT/backend.pid" "$PROJECT_ROOT/frontend.pid" 2>/dev/null || true
+rm -f "$PROJECT_ROOT/SRC/backend.pid" "$PROJECT_ROOT/SRC/frontend.pid" 2>/dev/null || true
 
 # 5. Check if ports are actually free
 echo ""

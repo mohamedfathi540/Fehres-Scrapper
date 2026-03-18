@@ -191,6 +191,7 @@ wait_for_backend() {
 
 # ── Cleanup on exit ───────────────────────────────────────────────
 
+# Cleanup function for SIGINT and SIGTERM
 cleanup() {
     echo ""
     echo -e "  ${YELLOW}${BOLD}"
@@ -201,26 +202,27 @@ cleanup() {
 
     # Kill frontend
     kill_pid_file "$FRONTEND_PID"
-    free_port 5173
+    free_port 5173 2>/dev/null || true
     info "Frontend stopped"
 
     # Kill backend
     kill_pid_file "$BACKEND_PID"
-    free_port 8000
+    free_port 8000 2>/dev/null || true
     info "Backend stopped"
 
     # Stop Docker infra
     docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" down 2>/dev/null || true
     info "Docker infrastructure stopped"
 
-    # Cleanup
-    rm -f "$BACKEND_LOG" "$FRONTEND_LOG"
+    # Cleanup temp logs (optional: keep them for debugging if desired, but script traditionally cleans up)
+    # rm -f "$BACKEND_LOG" "$FRONTEND_LOG"
     echo ""
     echo -e "  ${GREEN}${CHECK} All services stopped cleanly.${NC}"
     echo ""
     exit 0
 }
 
+# Trap signals for cleanup
 trap cleanup SIGINT SIGTERM
 
 # ══════════════════════════════════════════════════════════════════
@@ -368,10 +370,12 @@ uv sync --quiet 2>&1 || true
 info "Applying database migrations..."
 uv run alembic upgrade head || warn "Database migrations failed, please check."
 
-# Launch uvicorn
+# Launch uvicorn — Truly background and detach it
 info "Launching uvicorn on :8000 with hot-reload..."
-nohup uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload > "$BACKEND_LOG" 2>&1 &
-echo $! > "$BACKEND_PID"
+nohup uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload > "$BACKEND_LOG" 2>&1 < /dev/null &
+BACK_PID=$!
+echo $BACK_PID > "$BACKEND_PID"
+disown $BACK_PID
 
 BACKEND_WAIT_TIMEOUT=${BACKEND_WAIT_TIMEOUT:-300}
 if ! wait_for_backend 8000 "$BACKEND_WAIT_TIMEOUT"; then
@@ -393,10 +397,12 @@ cd "$PROJECT_ROOT/frontend"
 info "Installing frontend dependencies..."
 pnpm install --frozen-lockfile --silent 2>&1 || pnpm install --silent 2>&1 || true
 
-# Launch Vite with strict port so it fails instead of silently switching
+# Launch Vite — Truly background and detach it
 info "Launching Vite on :5173 with HMR..."
-nohup npx vite --host --port 5173 --strictPort > "$FRONTEND_LOG" 2>&1 &
-echo $! > "$FRONTEND_PID"
+nohup npx vite --host --port 5173 --strictPort > "$FRONTEND_LOG" 2>&1 < /dev/null &
+FRONT_PID=$!
+echo $FRONT_PID > "$FRONTEND_PID"
+disown $FRONT_PID
 
 if ! wait_for_port 5173 "Vite frontend" 30; then
     err "Frontend failed to start. Last 15 lines of log:"
