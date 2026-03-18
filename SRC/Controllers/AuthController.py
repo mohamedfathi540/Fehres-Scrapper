@@ -16,15 +16,7 @@ from Models.DB_Schemes.minirag.Schemes.User import User
 logger = logging.getLogger("uvicorn.error")
 
 # ── JWT / password configuration ──────────────────────────────────────
-SECRET_KEY = os.getenv("JWT_SECRET", "change-me-in-production")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "60"))
-
-# ── Brevo email configuration ────────────────────────────────────────
-BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
-SENDER_EMAIL = os.getenv("SENDER_EMAIL", "noreply@yourdomain.com")
-SENDER_NAME = os.getenv("SENDER_NAME", "Fehres System")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+from Helpers.Config import get_settings
 
 # ── Shared singletons (used by FastAPI dependency) ────────────────────
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -49,16 +41,18 @@ class AuthController(basecontroller):
     # ── JWT helpers ───────────────────────────────────────────────────
     @staticmethod
     def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
+        settings = get_settings()
         to_encode = data.copy()
         from datetime import datetime, timezone
-        expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+        expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=settings.JWT_EXPIRE_MINUTES))
         to_encode.update({"exp": expire})
-        return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        return jwt.encode(to_encode, settings.JWT_SECRET or "change-me-in-production", algorithm="HS256")
 
     @staticmethod
     def decode_access_token(token: str) -> dict:
+        settings = get_settings()
         try:
-            return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            return jwt.decode(token, settings.JWT_SECRET or "change-me-in-production", algorithms=["HS256"])
         except jwt.ExpiredSignatureError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -75,13 +69,14 @@ class AuthController(basecontroller):
     # ── email ─────────────────────────────────────────────────────────
     @staticmethod
     async def send_verification_email(email: str, token: str) -> None:
-        if not BREVO_API_KEY:
+        settings = get_settings()
+        if not settings.BREVO_API_KEY:
             logger.warning("BREVO_API_KEY not set — skipping verification email for %s", email)
             return
 
-        verification_link = f"{FRONTEND_URL}/verify-email?token={token}"
+        verification_link = f"{settings.FRONTEND_URL or 'http://localhost:5173'}/verify-email?token={token}"
         payload = {
-            "sender": {"email": SENDER_EMAIL, "name": SENDER_NAME},
+            "sender": {"email": settings.SENDER_EMAIL or "noreply@yourdomain.com", "name": settings.SENDER_NAME or "Fehres System"},
             "to": [{"email": email}],
             "subject": "Verify Your Email Address",
             "htmlContent": (
@@ -92,7 +87,7 @@ class AuthController(basecontroller):
         }
         headers = {
             "accept": "application/json",
-            "api-key": BREVO_API_KEY,
+            "api-key": settings.BREVO_API_KEY,
             "content-type": "application/json",
         }
         async with httpx.AsyncClient(timeout=30) as client:
