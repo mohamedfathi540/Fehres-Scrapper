@@ -144,6 +144,10 @@ class AuthController(basecontroller):
                 detail="Invalid or expired verification token",
             )
 
+        # Already verified (e.g. duplicate request) — just return success
+        if user.is_verified:
+            return {"message": "Email successfully verified"}
+
         await user_model.verify_user(user.user_id)
         return {"message": "Email successfully verified"}
 
