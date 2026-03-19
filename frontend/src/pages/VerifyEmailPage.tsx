@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { MailCheck, AlertCircle, Loader2 } from "lucide-react";
@@ -7,13 +7,16 @@ import { verifyEmail } from "../api/auth";
 export function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") ?? "";
+  const hasFetched = useRef(false);
 
   const mutation = useMutation({
     mutationFn: () => verifyEmail(token),
   });
 
   useEffect(() => {
+    if (hasFetched.current) return;
     if (token) {
+      hasFetched.current = true;
       mutation.mutate();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
