@@ -9,12 +9,14 @@ import {
   Workflow,
   LogOut,
 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { useAuthStore } from "../../stores/authStore";
 import { StatusBadge } from "../ui/StatusBadge";
 import { Button } from "../ui/Button";
 import { QuotaPanel } from "../ui/QuotaPanel";
 import { checkHealth } from "../../api/base";
+import { deleteAccount } from "../../api/auth";
 
 const navigation = [
   { name: "Chat", href: "/", icon: MessageSquare },
@@ -35,6 +37,23 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const navigate = useNavigate();
   const [apiStatus, setApiStatus] = useState<"online" | "offline">("offline");
   const [isChecking, setIsChecking] = useState(false);
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteAccount,
+    onSuccess: () => {
+      logout();
+      navigate('/login', { replace: true });
+    },
+    onError: (error: any) => {
+      alert(error.message || "Failed to delete account");
+    }
+  });
+
+  const handleDeleteAccount = () => {
+    if (window.confirm("Are you sure you want to permanently delete your account? This action cannot be undone.")) {
+      deleteMutation.mutate();
+    }
+  };
 
   const checkApiStatus = async () => {
     setIsChecking(true);
@@ -101,17 +120,28 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
       <div className="p-3 border-t border-border space-y-3">
         {email && (
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs text-text-secondary truncate" title={email}>
+          <div className="flex flex-col gap-2 bg-bg-primary rounded-lg p-3 border border-border">
+            <p className="text-xs font-medium text-text-primary truncate" title={email}>
               {email}
             </p>
-            <button
-              onClick={() => { logout(); navigate('/login', { replace: true }); }}
-              className="text-text-muted hover:text-error transition-colors"
-              aria-label="Sign out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { logout(); navigate('/login', { replace: true }); }}
+                className="flex-1 flex items-center justify-center gap-2 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-hover rounded transition-colors"
+                title="Sign out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                Sign out
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteMutation.isPending}
+                className="flex-1 flex items-center justify-center gap-2 py-1.5 text-xs text-error hover:bg-error/10 rounded transition-colors disabled:opacity-50"
+                title="Delete Account"
+              >
+                {deleteMutation.isPending ? "..." : "Delete"}
+              </button>
+            </div>
           </div>
         )}
         {/* Quota usage panel */}
