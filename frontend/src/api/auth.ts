@@ -20,3 +20,7 @@ export const resendVerification = async (email: string): Promise<MessageResponse
     const response = await apiClient.post<MessageResponse>('/auth/resend-verification', { email });
     return response.data;
 };
+export const deleteAccount = async (): Promise<MessageResponse> => {
+    const response = await apiClient.delete<MessageResponse>('/auth/account');
+    return response.data;
+};

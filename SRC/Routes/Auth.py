@@ -54,6 +54,15 @@ async def resend_verification(request: Request, body: ResendVerification):
     return result
 
 
+@auth_router.delete("/account")
+async def delete_account(request: Request, current_user: dict = Depends(get_current_user)):
+    result = await auth_controller.delete_account(
+        email=current_user["email"],
+        db_client=request.app.db_client,
+    )
+    return result
+
+
 @auth_router.get("/quota-status")
 async def get_quota_status(
     request: Request,

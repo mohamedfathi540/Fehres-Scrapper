@@ -167,6 +167,19 @@ class AuthController(basecontroller):
 
         return {"message": "Verification email resent. Please check your inbox."}
 
+    async def delete_account(self, email: str, db_client) -> dict:
+        user_model = await UserModel.create_instance(db_client=db_client)
+
+        user = await user_model.get_user_by_email(email)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+
+        await user_model.delete_user(user.user_id)
+        return {"message": "Account deleted successfully"}
+
 
 # ── FastAPI dependency (module-level for Depends()) ───────────────────
 _auth = AuthController()

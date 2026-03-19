@@ -58,3 +58,16 @@ class UserModel(BaseDataModel):
                 if user:
                     user.verification_token = token
             await session.commit()
+
+    async def delete_user(self, user_id: int) -> bool:
+        async with self.db_client() as session:
+            async with session.begin():
+                result = await session.execute(
+                    select(User).where(User.user_id == user_id)
+                )
+                user = result.scalar_one_or_none()
+                if not user:
+                    return False
+                await session.delete(user)
+            await session.commit()
+            return True
