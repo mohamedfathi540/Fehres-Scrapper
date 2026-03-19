@@ -147,7 +147,7 @@ export function LibraryDocsPage() {
               </div>
 
               {scrapeMutation.isError && (
-                <div className="p-3 bg-error/10 border border-error/30 rounded-lg text-sm text-error">
+                <div className={`p-3 border rounded-lg text-sm ${scrapeMutation.error instanceof Error && scrapeMutation.error.message.toLowerCase().includes('quota exceeded') ? 'bg-warning/10 border-warning/30 text-warning' : 'bg-error/10 border-error/30 text-error'}`}>
                   {scrapeMutation.error instanceof Error ? scrapeMutation.error.message : "Failed to start scraping"}
                 </div>
               )}

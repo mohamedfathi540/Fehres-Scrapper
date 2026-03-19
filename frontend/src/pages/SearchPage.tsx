@@ -193,9 +193,9 @@ export function SearchPage() {
       )}
 
       {searchMutation.isError && (
-        <Card className="border-error/50">
-          <p className="text-error">
-            Error:{" "}
+        <Card className={`border ${searchMutation.error instanceof Error && searchMutation.error.message.toLowerCase().includes('quota exceeded') ? 'border-warning/50' : 'border-error/50'}`}>
+          <p className={searchMutation.error instanceof Error && searchMutation.error.message.toLowerCase().includes('quota exceeded') ? 'text-warning' : 'text-error'}>
+            {searchMutation.error instanceof Error && searchMutation.error.message.toLowerCase().includes('quota exceeded') ? "Alert:" : "Error:"}{" "}
             {searchMutation.error instanceof Error ?
               searchMutation.error.message
             : "Search failed"}

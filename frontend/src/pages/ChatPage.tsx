@@ -62,10 +62,11 @@ export function ChatPage() {
       addMessage(assistantMessage);
     },
     onError: (error) => {
+      const isQuotaError = error instanceof Error && error.message.toLowerCase().includes('quota exceeded');
       const errorMessage: ChatMessage = {
         id: generateId(),
         role: "assistant",
-        content: `Error: ${error instanceof Error ? error.message : "Failed to get answer"}`,
+        content: `**${isQuotaError ? "Alert" : "Error"}**: ${error instanceof Error ? error.message : "Failed to get answer"}`,
         timestamp: new Date().toISOString(),
       };
       addMessage(errorMessage);
