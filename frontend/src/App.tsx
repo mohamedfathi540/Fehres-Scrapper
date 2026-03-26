@@ -6,6 +6,7 @@ import { ChatPage } from "./pages/ChatPage";
 import { LibraryDocsPage } from "./pages/LibraryDocsPage";
 import { IndexInfoPage } from "./pages/IndexInfoPage";
 import { SearchPage } from "./pages/SearchPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
@@ -39,6 +40,7 @@ function App() {
                 <Route path="library-docs" element={<LibraryDocsPage />} />
                 <Route path="search" element={<SearchPage />} />
                 <Route path="index" element={<IndexInfoPage />} />
+                <Route path="settings" element={<SettingsPage />} />
               </Route>
             </Route>
 

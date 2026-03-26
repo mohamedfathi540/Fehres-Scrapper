@@ -1,4 +1,8 @@
+import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { useSettingsStore } from "../stores/settingsStore";
+import { useAuthStore } from "../stores/authStore";
+import { deleteAccount } from "../api/auth";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 
@@ -10,6 +14,26 @@ export function SettingsPage() {
     toggleTheme,
     clearHistory,
   } = useSettingsStore();
+
+  const logout = useAuthStore((s) => s.logout);
+  const navigate = useNavigate();
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteAccount,
+    onSuccess: () => {
+      logout();
+      navigate('/login', { replace: true });
+    },
+    onError: (error: any) => {
+      alert(error.message || "Failed to delete account");
+    }
+  });
+
+  const handleDeleteAccount = () => {
+    if (window.confirm("Are you sure you want to permanently delete your account? This action cannot be undone.")) {
+      deleteMutation.mutate();
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -133,6 +157,25 @@ export function SettingsPage() {
             A modern frontend for the Fehres RAG API built with React and React
             Aria
           </p>
+        </div>
+      </Card>
+
+      {/* Danger Zone */}
+      <Card title="Danger Zone">
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="text-error font-medium">Delete Account</h4>
+            <p className="text-sm text-text-muted">
+              Permanently delete your account and all associated data.
+            </p>
+          </div>
+          <Button
+            variant="danger"
+            onPress={handleDeleteAccount}
+            isLoading={deleteMutation.isPending}
+          >
+            Delete Account
+          </Button>
         </div>
       </Card>
     </div>
