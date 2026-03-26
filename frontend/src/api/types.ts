@@ -139,6 +139,8 @@ export interface ChatMessage {
     metadata?: {
         fullPrompt?: string;
         chatHistory?: unknown[];
+        isError?: boolean;
+        isQuotaError?: boolean;
     };
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Send, ChevronDown } from "lucide-react";
+import { Send, ChevronDown, AlertTriangle, AlertCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useSettingsStore } from "../stores/settingsStore";
@@ -68,8 +68,14 @@ export function ChatPage() {
       const errorMessage: ChatMessage = {
         id: generateId(),
         role: "assistant",
-        content: `**${isQuotaError ? "Alert" : "Error"}**: ${error instanceof Error ? error.message : "Failed to get answer"}`,
+        content: isQuotaError
+          ? "You have reached your usage limit. Please wait until your quota resets or upgrade your account."
+          : `${error instanceof Error ? error.message : "Failed to get an answer from the server."}`,
         timestamp: new Date().toISOString(),
+        metadata: {
+          isError: true,
+          isQuotaError: isQuotaError,
+        },
       };
       if (activeLibraryId) addMessage(activeLibraryId, errorMessage);
     },
@@ -157,25 +163,47 @@ export function ChatPage() {
             : currentChatHistory.map((message) => (
               <div
                 key={message.id}
-                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"
-                  }`}
+                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.role === "user" ?
-                    "bg-primary-600 text-white rounded-br-none"
-                    : "bg-bg-tertiary text-text-primary border border-border rounded-bl-none"
-                    }`}
+                  className={`max-w-[80%] rounded-2xl px-4 py-3 flex flex-col gap-1 ${
+                    message.role === "user"
+                      ? "bg-primary-600 text-white rounded-br-none"
+                      : message.metadata?.isQuotaError
+                      ? "bg-[#f97316]/10 border border-[#f97316]/30 text-[#f97316] rounded-bl-none"
+                      : message.metadata?.isError
+                      ? "bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#ef4444] rounded-bl-none"
+                      : "bg-bg-tertiary text-text-primary border border-border rounded-bl-none"
+                  }`}
                 >
-                  {message.role === "assistant" ? (
+                  {/* Quota Header */}
+                  {message.metadata?.isQuotaError && (
+                    <div className="flex items-center gap-2 font-semibold mb-1">
+                      <AlertTriangle className="w-4 h-4" />
+                      <span>Quota Exceeded</span>
+                    </div>
+                  )}
+
+                  {/* General Error Header */}
+                  {message.metadata?.isError && !message.metadata?.isQuotaError && (
+                    <div className="flex items-center gap-2 font-semibold mb-1">
+                      <AlertCircle className="w-4 h-4" />
+                      <span>System Error</span>
+                    </div>
+                  )}
+
+                  {/* Message Content */}
+                  {message.role === "assistant" && !message.metadata?.isError ? (
                     <div className="chat-markdown text-sm">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {message.content}
                       </ReactMarkdown>
                     </div>
                   ) : (
-                    <p className="whitespace-pre-wrap">{message.content}</p>
+                    <p className="whitespace-pre-wrap text-sm">{message.content}</p>
                   )}
-                  <span className="text-xs opacity-70 mt-2 block">
+
+                  <span className="text-xs opacity-70 mt-1 block">
                     {formatDate(message.timestamp)}
                   </span>
                 </div>
