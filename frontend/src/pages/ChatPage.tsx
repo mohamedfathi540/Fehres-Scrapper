@@ -12,9 +12,8 @@ import { generateId, formatDate } from "../utils/helpers";
 import type { ChatMessage } from "../api/types";
 
 export function ChatPage() {
-  const { chatHistory, addMessage, clearHistory } = useSettingsStore();
+  const { chats, activeLibraryId, setActiveLibraryId, addMessage, clearHistory } = useSettingsStore();
   const [question, setQuestion] = useState("");
-  const [selectedLibraryId, setSelectedLibraryId] = useState<number | null>(null);
   const contextLimit = 10;
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -26,14 +25,17 @@ export function ChatPage() {
 
   const libraries = librariesData?.libraries || [];
 
+  // Get the current isolated chat history
+  const currentChatHistory = activeLibraryId ? (chats[activeLibraryId] || []) : [];
+
   // Auto-select first library if none selected and libraries exist
   useEffect(() => {
-    if (!selectedLibraryId && libraries.length > 0) {
-      setSelectedLibraryId(libraries[0].id);
+    if (!activeLibraryId && libraries.length > 0) {
+      setActiveLibraryId(libraries[0].id);
     }
-  }, [libraries, selectedLibraryId]);
+  }, [libraries, activeLibraryId, setActiveLibraryId]);
 
-  const selectedLibrary = libraries.find(l => l.id === selectedLibraryId);
+  const selectedLibrary = libraries.find(l => l.id === activeLibraryId);
 
   const answerMutation = useMutation({
     mutationFn: (text: string) =>
@@ -41,7 +43,7 @@ export function ChatPage() {
         text,
         limit: contextLimit,
         project_name: selectedLibrary?.name,
-        chat_history: chatHistory
+        chat_history: currentChatHistory
           .slice(-10)
           .filter((m): m is typeof m & { role: "user" | "assistant" } =>
             m.role === "user" || m.role === "assistant"
@@ -59,7 +61,7 @@ export function ChatPage() {
           chatHistory: data.ChatHistory,
         },
       };
-      addMessage(assistantMessage);
+      if (activeLibraryId) addMessage(activeLibraryId, assistantMessage);
     },
     onError: (error) => {
       const isQuotaError = error instanceof Error && error.message.toLowerCase().includes('quota exceeded');
@@ -69,13 +71,13 @@ export function ChatPage() {
         content: `**${isQuotaError ? "Alert" : "Error"}**: ${error instanceof Error ? error.message : "Failed to get answer"}`,
         timestamp: new Date().toISOString(),
       };
-      addMessage(errorMessage);
+      if (activeLibraryId) addMessage(activeLibraryId, errorMessage);
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!question.trim() || answerMutation.isPending || !selectedLibrary) return;
+    if (!question.trim() || answerMutation.isPending || !selectedLibrary || !activeLibraryId) return;
 
     const userMessage: ChatMessage = {
       id: generateId(),
@@ -83,14 +85,14 @@ export function ChatPage() {
       content: question,
       timestamp: new Date().toISOString(),
     };
-    addMessage(userMessage);
+    addMessage(activeLibraryId, userMessage);
     answerMutation.mutate(question);
     setQuestion("");
   };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatHistory, answerMutation.isPending]);
+  }, [currentChatHistory, answerMutation.isPending]);
 
   return (
     <div className="flex flex-col h-[calc(100dvh-5.5rem)] md:h-[calc(100dvh-4rem)] min-h-0">
@@ -112,8 +114,8 @@ export function ChatPage() {
           </label>
           <div className="relative w-full sm:w-64">
             <select
-              value={selectedLibraryId || ""}
-              onChange={(e) => setSelectedLibraryId(Number(e.target.value))}
+              value={activeLibraryId || ""}
+              onChange={(e) => setActiveLibraryId(Number(e.target.value))}
               className="w-full appearance-none bg-bg-primary border border-border text-text-primary px-4 py-2 pr-8 rounded-lg focus:outline-none focus:border-primary-500 cursor-pointer"
               disabled={libraries.length === 0}
             >
@@ -139,7 +141,7 @@ export function ChatPage() {
       >
         {/* Messages */}
         <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
-          {chatHistory.length === 0 ?
+          {currentChatHistory.length === 0 ?
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <p className="text-lg mb-2 text-text-primary">
@@ -152,7 +154,7 @@ export function ChatPage() {
                 </p>
               </div>
             </div>
-            : chatHistory.map((message) => (
+            : currentChatHistory.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.role === "user" ? "justify-end" : "justify-start"
@@ -196,9 +198,9 @@ export function ChatPage() {
 
         {/* Input Area */}
         <div className="border-t border-border p-4 bg-bg-secondary">
-          {chatHistory.length > 0 && (
+          {currentChatHistory.length > 0 && (
             <div className="mb-3 flex justify-end">
-              <Button variant="ghost" size="sm" onPress={clearHistory}>
+              <Button variant="ghost" size="sm" onPress={() => activeLibraryId && clearHistory(activeLibraryId)}>
                 Clear History
               </Button>
             </div>

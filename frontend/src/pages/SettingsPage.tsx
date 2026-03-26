@@ -100,7 +100,7 @@ export function SettingsPage() {
               Remove all chat messages from local storage
             </p>
           </div>
-          <Button variant="danger" onPress={clearHistory}>
+          <Button variant="danger" onPress={() => clearHistory()}>
             Clear History
           </Button>
         </div>
