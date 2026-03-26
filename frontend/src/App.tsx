@@ -10,6 +10,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { ScrapeProgressProvider } from "./stores/ScrapeProgressContext";
+import { ToastContainer } from "./components/ui/ToastContainer";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +46,7 @@ function App() {
           </Routes>
         </BrowserRouter>
       </ScrapeProgressProvider>
+      <ToastContainer />
     </QueryClientProvider>
   );
 }

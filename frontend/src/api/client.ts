@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance, type AxiosError } from 'axios';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useAuthStore } from '../stores/authStore';
+import { showToast } from '../stores/toastStore';
 
 const DEFAULT_API_PREFIX = '/api/v1';
 
@@ -86,9 +87,17 @@ const createApiClient = (): AxiosInstance => {
                 if (error.response.status === 401) {
                     useAuthStore.getState().logout();
                 }
+
+                // Toast on 503 Service Unavailable
+                if (error.response.status === 503) {
+                    showToast('Server is temporarily unavailable. Please try again shortly.', 'error');
+                }
+
                 const errorMessage = extractErrorMessage(error);
                 return Promise.reject(new Error(errorMessage));
             } else if (error.request) {
+                // Network error — server unreachable
+                showToast('No response from server. Check your connection or try again later.', 'error');
                 return Promise.reject(new Error('No response from server. Check API URL in Settings and verify backend/proxy is reachable.'));
             } else {
                 return Promise.reject(new Error(error.message));

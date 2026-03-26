@@ -35,7 +35,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const logout = useAuthStore((s) => s.logout);
   const email = useAuthStore((s) => s.email);
   const navigate = useNavigate();
-  const [apiStatus, setApiStatus] = useState<"online" | "offline">("offline");
+  const [apiStatus, setApiStatus] = useState<"online" | "offline">("online");
   const [isChecking, setIsChecking] = useState(false);
 
   const deleteMutation = useMutation({
