@@ -211,7 +211,10 @@ start_cloudflared_local() {
 
 # ── Main Script Logic (rest of script continues here) ─────────────
 
-# (If there is more code after this, it should be restored here. If not, this line can be removed.)
+wait_for_backend() {
+    local port=$1
+    local max_wait=${2:-300}
+    local waited=0
 
     while [ $waited -lt $max_wait ]; do
         if ss -tlnH 2>/dev/null | grep -q ":${port} "; then
@@ -250,14 +253,11 @@ cleanup() {
     free_port 5173 2>/dev/null || true
     info "Frontend stopped"
 
-<<<<<<< HEAD
-=======
     # Kill Cloudflare tunnel (local process)
     kill_pid_file "$CLOUDFLARED_PID"
     info "Cloudflare tunnel stopped"
 
     # Kill backend
->>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
     kill_pid_file "$BACKEND_PID"
     free_port 8000 2>/dev/null || true
     info "Backend stopped"
@@ -279,10 +279,7 @@ trap cleanup SIGINT SIGTERM
 
 print_banner
 
-<<<<<<< HEAD
-=======
 # ── STEP 0: Clean up everything ───────────────────────────────────
->>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 step 0 4 "Preparing environment" "$GEAR"
 
 kill_pid_file "$BACKEND_PID"
@@ -291,11 +288,7 @@ kill_pid_file "$CLOUDFLARED_PID"
 
 # FIXED: Removed generic "pgvector", "qdrant", "nginx" so it doesn't kill RxTract
 info "Stopping any existing Docker services..."
-<<<<<<< HEAD
-OLD_CONTAINERS="fehres-pgvector fehres-qdrant fehres-nginx fehres-cloudflared"
-=======
-OLD_CONTAINERS="fastapi frontend nginx pgvector qdrant prometheus grafana postgres_exporter node_exporter cloudflared fehres-pgvector fehres-qdrant fehres-nginx-dev fehres-cloudflared-dev"
->>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
+OLD_CONTAINERS="fastapi frontend nginx pgvector qdrant prometheus grafana postgres_exporter node_exporter cloudflared fehres-pgvector fehres-qdrant fehres-nginx-dev fehres-cloudflared-dev fehres-nginx fehres-cloudflared"
 for c in $OLD_CONTAINERS; do
     docker stop "$c" 2>/dev/null && docker rm "$c" 2>/dev/null || true
 done
@@ -306,37 +299,22 @@ docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" down --remove-orphans 2>/dev/null
 # FIXED: Swapped 8000 for 8000
 free_port 8000
 free_port 5173
-<<<<<<< HEAD
-free_port "$NGINX_PORT"
-=======
-free_port 8888
->>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
+free_port "${NGINX_PORT:-8888}"
 
 sleep 1
 
 # FIXED: Swapped 8000 for 8000
 require_port_free 8000 "FastAPI backend"
 require_port_free 5173 "Vite frontend"
-<<<<<<< HEAD
-require_port_free "$NGINX_PORT" "Nginx reverse proxy"
-
-success "Environment is clean"
-
-step 1 4 "Starting hybrid Docker services" "$DB"
-
-info "Starting pgvector + Qdrant + Nginx (+ Cloudflare if configured) via Docker..."
-docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" up -d 2>&1 | tail -8
-=======
-require_port_free 8888 "Nginx reverse proxy"
+require_port_free "${NGINX_PORT:-8888}" "Nginx reverse proxy"
 
 success "Environment is clean"
 
 # ── STEP 1: Docker infrastructure ─────────────────────────────────
 step 1 4 "Starting hybrid Docker infrastructure" "$DB"
 
-info "Starting pgvector + Qdrant + Nginx via Docker..."
-docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" up -d pgvector qdrant nginx 2>&1 | tail -10
->>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
+info "Starting pgvector + Qdrant + Nginx (+ Cloudflare if configured) via Docker..."
+docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" up -d 2>&1 | tail -10
 
 info "Waiting for PostgreSQL to accept connections..."
 PG_WAIT_TIMEOUT=${PG_WAIT_TIMEOUT:-180}
@@ -372,11 +350,11 @@ else
     warn "Qdrant may not be fully ready yet"
 fi
 
-<<<<<<< HEAD
 nginx_waited=0
 nginx_code="000"
+NGINX_P=${NGINX_PORT:-8888}
 while [ $nginx_waited -lt 30 ]; do
-    nginx_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${NGINX_PORT}" 2>/dev/null || echo "000")
+    nginx_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${NGINX_P}" 2>/dev/null || echo "000")
     if [ "$nginx_code" != "000" ]; then
         break
     fi
@@ -384,31 +362,24 @@ while [ $nginx_waited -lt 30 ]; do
     nginx_waited=$((nginx_waited + 1))
 done
 if [ $nginx_waited -lt 30 ]; then
-    success "Nginx reverse proxy is reachable on :${NGINX_PORT}  (HTTP ${nginx_code}, ${nginx_waited}s)"
+    success "Nginx reverse proxy is reachable on :${NGINX_P}  (HTTP ${nginx_code}, ${nginx_waited}s)"
 else
-    err "Nginx did not become ready on :${NGINX_PORT}"
+    err "Nginx did not become ready on :${NGINX_P}"
     exit 1
 fi
 
-=======
-wait_for_port 8888 "Nginx reverse proxy" 30 || true
-
 # ── STEP 3: Backend ───────────────────────────────────────────────
->>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 step 2 4 "Starting FastAPI backend" "$BOLT"
 
 cd "$PROJECT_ROOT/SRC"
 
-<<<<<<< HEAD
+sync_backend_env
+
 # FIXED: Switched kill target to port 8000
 pkill -f "uvicorn main:app --host 0.0.0.0 --port 8000" 2>/dev/null || true
 sleep 0.5
 
-=======
-sync_backend_env
-
 # Ensure deps
->>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 info "Syncing Python dependencies with uv..."
 uv sync --quiet 2>&1 || true
 
@@ -431,10 +402,7 @@ fi
 
 cd "$PROJECT_ROOT"
 
-<<<<<<< HEAD
-=======
 # ── STEP 4: Frontend ──────────────────────────────────────────────
->>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 step 3 4 "Starting Vite frontend" "$GLOBE"
 
 cd "$PROJECT_ROOT/frontend"
@@ -466,33 +434,19 @@ start_cloudflared_local
 
 echo ""
 echo -e "  ${GREEN}${BOLD}"
-<<<<<<< HEAD
-echo "  ╔═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗"
-echo -e "  ║              ${SPARKLE}  ${NC}${GREEN}${BOLD}Fehres is LIVE${NC}${GREEN}${BOLD}  ${SPARKLE}                                                                                     ║"
-echo "  ╠═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╣"
-echo -e "  ║                                                                                                                       ║"
-echo -e "  ║  ${NC}${CYAN} Frontend  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:5173${NC}               ${GREEN}               ║"
-echo -e "  ║  ${NC}${CYAN} Nginx     ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:${NGINX_PORT}${NC}               ${GREEN}       ║"
-echo -e "  ║  ${NC}${CYAN} API Docs  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:8000/docs${NC}          ${GREEN}               ║"
-echo -e "  ║  ${NC}${CYAN} Postgres  ${NC}${GREEN}→${NC}  ${BOLD}localhost:5433${NC}                      ${GREEN}               ║"
-echo -e "  ║  ${NC}${CYAN} Qdrant    ${NC}${GREEN}→${NC}  ${BOLD}localhost:6333${NC}                      ${GREEN}               ║"
-echo -e "  ║                                                                                                                       ║"
-echo -e "  ${GREEN}╚══════════════════════════════════════════════════════════════════════════════════════════════════════════╝${NC}"
-=======
-echo "  ╔══════════════════════════════════════════════════════════╗"
-echo -e "  ║              ${SPARKLE}  ${NC}${GREEN}${BOLD}Fehres is LIVE${NC}${GREEN}${BOLD}  ${SPARKLE}                        ║"
-echo "  ╠══════════════════════════════════════════════════════════╣"
-echo -e "  ║                                                          ║"
-echo -e "  ║  ${NC}${CYAN} Frontend  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:5173${NC}               ${GREEN}   ║"
-echo -e "  ║  ${NC}${CYAN} Nginx App  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:8888${NC}               ${GREEN}   ║"
-echo -e "  ║  ${NC}${CYAN} API Docs  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:8000/docs${NC}          ${GREEN}   ║"
-echo -e "  ║  ${NC}${CYAN} Postgres  ${NC}${GREEN}→${NC}  ${BOLD}localhost:5434${NC}                      ${GREEN}   ║"
-echo -e "  ║  ${NC}${CYAN} Qdrant    ${NC}${GREEN}→${NC}  ${BOLD}localhost:6333${NC}                      ${GREEN}   ║"
-echo -e "  ║                                                          ║"
-echo -e "  ${GREEN}╚══════════════════════════════════════════════════════════╝${NC}"
+echo "  ╔═════════════════════════════════════════════════════════════════════════╗"
+echo -e "  ║              ${SPARKLE}  ${NC}${GREEN}${BOLD}Fehres is LIVE${NC}${GREEN}${BOLD}  ${SPARKLE}                                   ║"
+echo "  ╠═════════════════════════════════════════════════════════════════════════╣"
+echo -e "  ║                                                                         ║"
+echo -e "  ║  ${NC}${CYAN} Frontend  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:5173${NC}               ${GREEN}                    ║"
+echo -e "  ║  ${NC}${CYAN} Nginx     ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:${NGINX_PORT:-8888}${NC}               ${GREEN}            ║"
+echo -e "  ║  ${NC}${CYAN} API Docs  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:8000/docs${NC}          ${GREEN}                    ║"
+echo -e "  ║  ${NC}${CYAN} Postgres  ${NC}${GREEN}→${NC}  ${BOLD}localhost:5434${NC}                      ${GREEN}                    ║"
+echo -e "  ║  ${NC}${CYAN} Qdrant    ${NC}${GREEN}→${NC}  ${BOLD}localhost:6333${NC}                      ${GREEN}                    ║"
+echo -e "  ║                                                                         ║"
+echo -e "  ${GREEN}╚═════════════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "  ${DIM}Press ${BOLD}Ctrl+C${NC}${DIM} to stop all services${NC}"
->>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 echo ""
 
 echo -e "  ${DIM}Running in detached mode. Logs: ${BOLD}$BACKEND_LOG${NC} ${DIM}and${NC} ${BOLD}$FRONTEND_LOG${NC}"

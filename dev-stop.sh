@@ -77,12 +77,7 @@ kill_pid_file "$CLOUDFLARED_PID" "Cloudflared"
 
 # 4. Stop Docker infra — kill known containers first (handles zombie docker-proxy)
 echo -e "  ${CYAN}Stopping Docker infrastructure...${NC}"
-<<<<<<< HEAD
-OLD_CONTAINERS="fastapi frontend nginx pgvector qdrant prometheus grafana postgres_exporter node_exporter cloudflared fehres-pgvector fehres-qdrant fehres-nginx fehres-cloudflared"
-=======
-    echo -e "    ${DIM}No full Docker stack was running${NC}"
-
-OLD_CONTAINERS="fastapi frontend nginx pgvector qdrant prometheus grafana postgres_exporter node_exporter cloudflared fehres-pgvector fehres-qdrant fehres-nginx-dev fehres-cloudflared-dev"
+OLD_CONTAINERS="fastapi frontend nginx pgvector qdrant prometheus grafana postgres_exporter node_exporter cloudflared fehres-pgvector fehres-qdrant fehres-nginx-dev fehres-cloudflared-dev fehres-nginx fehres-cloudflared"
 for c in $OLD_CONTAINERS; do
     docker stop "$c" 2>/dev/null && docker rm "$c" 2>/dev/null || true
 done
@@ -90,7 +85,7 @@ docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" down --remove-orphans 2>/dev/null
     echo -e "    ${GREEN}${CHECK} Dev Docker containers stopped${NC}" || \
     echo -e "    ${DIM}No dev Docker containers were running${NC}"
 
-echo ""
+docker compose -f "$PROJECT_ROOT/$COMPOSE_FULL" down --remove-orphans 2>/dev/null && \
     echo -e "    ${GREEN}${CHECK} Full Docker stack stopped${NC}" || \
     echo -e "    ${DIM}No full Docker stack was running${NC}"
 
@@ -98,7 +93,6 @@ echo ""
 rm -f "$BACKEND_LOG" "$FRONTEND_LOG" "$CLOUDFLARED_LOG"
 rm -f "$PROJECT_ROOT/backend.pid" "$PROJECT_ROOT/frontend.pid" 2>/dev/null || true
 rm -f "$PROJECT_ROOT/SRC/backend.pid" "$PROJECT_ROOT/SRC/frontend.pid" 2>/dev/null || true
-...existing code...
 if ss -tlnH 2>/dev/null | grep -qE ':8000 |:5173 |:8888 '; then
     echo -e "  ${YELLOW}⚠️  Some ports are still occupied (zombie docker-proxy).${NC}"
     echo -e "  ${YELLOW}   Run: ${BOLD}sudo systemctl restart docker${NC}${YELLOW} to clear them.${NC}"
