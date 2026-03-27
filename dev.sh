@@ -45,7 +45,34 @@ CLOUDFLARED_ENV_FILE="$PROJECT_ROOT/Docker/env/.env.cloudflared"
 
 mkdir -p "$PID_DIR"
 
-...existing code...
+# ── Helper Functions ───────────────────────────────────────────────
+print_banner() {
+    echo ""
+    echo -e "${MAGENTA}${BOLD}"
+    echo "    ███████╗███████╗██╗  ██╗██████╗ ███████╗███████╗"
+    echo "    ██╔════╝██╔════╝██║  ██║██╔══██╗██╔════╝██╔════╝"
+    echo "    █████╗  █████╗  ███████║██████╔╝█████╗  ███████╗"
+    echo "    ██╔══╝  ██╔══╝  ██╔══██║██╔══██╗██╔══╝  ╚════██║"
+    echo "    ██║     ███████╗██║  ██║██║  ██║███████╗███████║"
+    echo "    ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝"
+    echo -e "${NC}"
+    echo -e "    ${DIM}Hybrid Dev Environment${NC}  ${FIRE} ${BOLT} ${ROCKET}"
+    echo ""
+}
+
+step() {
+    local num=$1
+    local total=$2
+    local msg=$3
+    local icon=$4
+    echo ""
+    echo -e "  ${CYAN}${BOLD}[$num/$total]${NC} ${icon}  ${BOLD}${msg}${NC}"
+    echo -e "  ${DIM}$(printf '%.0s─' {1..52})${NC}"
+}
+
+success() {
+    echo -e "        ${GREEN}${CHECK} $1${NC}"
+}
 
 warn() {
     echo -e "        ${YELLOW}⚠️  $1${NC}"
@@ -181,8 +208,10 @@ start_cloudflared_local() {
     fi
 }
 
-# ── Cleanup on exit ───────────────────────────────────────────────
-...existing code...
+
+# ── Main Script Logic (rest of script continues here) ─────────────
+
+# (If there is more code after this, it should be restored here. If not, this line can be removed.)
 
     while [ $waited -lt $max_wait ]; do
         if ss -tlnH 2>/dev/null | grep -q ":${port} "; then
