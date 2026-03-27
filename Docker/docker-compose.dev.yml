@@ -1,6 +1,6 @@
-# Development hybrid infrastructure
-# Docker: pgvector + qdrant + nginx + cloudflared
-# Local: FastAPI + Vite frontend
+# Development infrastructure (hybrid mode)
+# Docker: pgvector + qdrant + nginx (optional cloudflared profile)
+# Local:  FastAPI + Vite for fast iteration
 
 services:
   # PostgreSQL (PGvector)
@@ -15,9 +15,9 @@ services:
           cpus: '0.5'
           memory: 512M
     ports:
-      - "5433:5432"
-    volumes:
-      - "pgvector:/var/lib/postgresql/data"
+      - "5434:5432"
+        volumes:
+      - "${PGVECTOR_DEV_DATA_DIR:-/srv/mergerfs/2TB/fehres_db_dev}:/var/lib/postgresql/data"
     env_file:
       - ./env/.env.postgres
     networks:
@@ -30,7 +30,7 @@ services:
       retries: 10
       start_period: 30s
 
-  # Qdrant (Vector DB) - optional, comment out if using PGVECTOR only
+  # Qdrant (Vector DB)
   qdrant:
     image: qdrant/qdrant:latest
     container_name: fehres-qdrant
@@ -45,7 +45,7 @@ services:
       - "6333:6333"
       - "6334:6334"
     volumes:
-      - "qdrant_data:/qdrant/storage"
+      - "${QDRANT_DEV_DATA_DIR:-/srv/mergerfs/2TB/fehres_qdrant_dev}:/qdrant/storage"
     networks:
       - backend
     restart: unless-stopped
@@ -53,14 +53,7 @@ services:
   # Nginx reverse proxy for hybrid mode
   nginx:
     image: nginx:latest
-    container_name: fehres-nginx
-    ulimits:
-      core: 0
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
+    container_name: fehres-nginx-dev
     ports:
       - "8888:80"
     volumes:
@@ -74,19 +67,9 @@ services:
       - backend
     restart: unless-stopped
 
-  # Optional Cloudflare tunnel (requires Docker/env/.env.cloudflared)
   cloudflared:
     image: cloudflare/cloudflared:latest
-    container_name: fehres-cloudflared
-    ulimits:
-      core: 0
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    container_name: fehres-cloudflared-dev
     command: tunnel --no-autoupdate run --token $${TUNNEL_TOKEN}
     env_file:
       - ./env/.env.cloudflared
@@ -95,6 +78,8 @@ services:
     networks:
       - backend
     restart: unless-stopped
+    profiles:
+      - tunnel
 
 networks:
   backend:
