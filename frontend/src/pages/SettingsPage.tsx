@@ -8,8 +8,6 @@ import { Button } from "../components/ui/Button";
 
 export function SettingsPage() {
   const {
-    apiUrl,
-    setApiUrl,
     theme,
     toggleTheme,
     clearHistory,
@@ -47,28 +45,6 @@ export function SettingsPage() {
         </p>
       </div>
 
-      {/* API Configuration */}
-      <Card title="API Configuration">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">
-              API Base URL
-            </label>
-            <input
-              type="text"
-              value={apiUrl}
-              onChange={(e) => setApiUrl(e.target.value)}
-              placeholder="/api/v1"
-              className="w-full px-4 py-2 bg-bg-tertiary border border-border rounded-md text-text-primary focus:outline-none focus:border-primary-600 transition-all"
-            />
-            <p className="text-xs text-text-muted mt-1">
-              The base URL for the Fehres API
-            </p>
-          </div>
-
-        </div>
-      </Card>
-
       {/* Appearance */}
       <Card title="Appearance">
         <div className="flex items-center justify-between">
@@ -103,48 +79,6 @@ export function SettingsPage() {
           <Button variant="danger" onPress={() => clearHistory()}>
             Clear History
           </Button>
-        </div>
-      </Card>
-
-      {/* Quick Links */}
-      <Card title="Quick Links">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <a
-            href="http://localhost:3000"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-4 bg-bg-tertiary rounded-md border border-border hover:border-primary-600 transition-colors text-center"
-          >
-            <div className="text-text-primary font-medium">Grafana</div>
-            <div className="text-xs text-text-muted mt-1">Metrics</div>
-          </a>
-          <a
-            href="http://localhost:9090"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-4 bg-bg-tertiary rounded-md border border-border hover:border-primary-600 transition-colors text-center"
-          >
-            <div className="text-text-primary font-medium">Prometheus</div>
-            <div className="text-xs text-text-muted mt-1">Monitoring</div>
-          </a>
-          <a
-            href="http://localhost:6333/dashboard"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-4 bg-bg-tertiary rounded-md border border-border hover:border-primary-600 transition-colors text-center"
-          >
-            <div className="text-text-primary font-medium">Qdrant</div>
-            <div className="text-xs text-text-muted mt-1">Vector DB</div>
-          </a>
-          <a
-            href="/docs"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-4 bg-bg-tertiary rounded-md border border-border hover:border-primary-600 transition-colors text-center"
-          >
-            <div className="text-text-primary font-medium">API Docs</div>
-            <div className="text-xs text-text-muted mt-1">Swagger</div>
-          </a>
         </div>
       </Card>
 

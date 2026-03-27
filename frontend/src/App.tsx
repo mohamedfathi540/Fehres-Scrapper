@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useSettingsStore } from "./stores/settingsStore";
 import { MainLayout } from "./components/layout/MainLayout";
 import { ProtectedRoute } from "./components/layout/ProtectedRoute";
 import { ChatPage } from "./pages/ChatPage";
@@ -23,6 +25,16 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  const theme = useSettingsStore((s) => s.theme);
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.documentElement.classList.add('light');
+    } else {
+      document.documentElement.classList.remove('light');
+    }
+  }, [theme]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ScrapeProgressProvider>

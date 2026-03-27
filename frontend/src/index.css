@@ -44,6 +44,25 @@
   --radius-xl: 0.75rem;
 }
 
+html.light {
+  /* Light theme - Clean and Bright */
+  --color-bg-primary: #f8fafc;
+  --color-bg-secondary: #f1f5f9;
+  --color-bg-tertiary: #e2e8f0;
+  --color-bg-card: #ffffff;
+  --color-bg-hover: #e2e8f0;
+  --color-bg-pressed: #cbd5e1;
+
+  /* Text - Light mode */
+  --color-text-primary: #0f172a;
+  --color-text-secondary: rgba(15, 23, 42, 0.75);
+  --color-text-muted: rgba(15, 23, 42, 0.55);
+
+  /* Borders - Light mode */
+  --color-border: rgba(15, 23, 42, 0.15);
+  --color-border-hover: rgba(15, 23, 42, 0.25);
+}
+
 /* Base styles */
 * {
   box-sizing: border-box;
@@ -341,7 +360,7 @@ input[type="checkbox"] {
   appearance: none;
   width: 1.125rem;
   height: 1.125rem;
-  border: 2px solid rgba(255, 255, 255, 0.4);
+  border: 2px solid var(--color-text-muted);
   border-radius: 0.25rem;
   background-color: transparent;
   cursor: pointer;
@@ -351,12 +370,12 @@ input[type="checkbox"] {
 }
 
 input[type="checkbox"]:hover {
-  border-color: rgba(255, 255, 255, 0.6);
+  border-color: var(--color-text-secondary);
 }
 
 input[type="checkbox"]:checked {
   background-color: var(--color-bg-tertiary);
-  border-color: rgba(255, 255, 255, 0.6);
+  border-color: var(--color-text-secondary);
 }
 
 input[type="checkbox"]:checked::after {
