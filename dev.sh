@@ -39,45 +39,13 @@ CLOUDFLARED_LOG="$PID_DIR/cloudflared.log"
 COMPOSE_DEV="Docker/docker-compose.dev.yml"
 COMPOSE_FULL="Docker/docker-compose.yml"
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
-<<<<<<< HEAD
-NGINX_PORT=8888
-=======
 APP_ENV_FILE="$PROJECT_ROOT/Docker/env/.env.app"
 BACKEND_ENV_FILE="$PROJECT_ROOT/SRC/.env"
 CLOUDFLARED_ENV_FILE="$PROJECT_ROOT/Docker/env/.env.cloudflared"
->>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 
 mkdir -p "$PID_DIR"
 
-# ── Helper Functions ───────────────────────────────────────────────
-
-print_banner() {
-    echo ""
-    echo -e "${MAGENTA}${BOLD}"
-    echo "    ███████╗███████╗██╗  ██╗██████╗ ███████╗███████╗"
-    echo "    ██╔════╝██╔════╝██║  ██║██╔══██╗██╔════╝██╔════╝"
-    echo "    █████╗  █████╗  ███████║██████╔╝█████╗  ███████╗"
-    echo "    ██╔══╝  ██╔══╝  ██╔══██║██╔══██╗██╔══╝  ╚════██║"
-    echo "    ██║     ███████╗██║  ██║██║  ██║███████╗███████║"
-    echo "    ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝"
-    echo -e "${NC}"
-    echo -e "    ${DIM}Hybrid Dev Environment${NC}  ${FIRE} ${BOLT} ${ROCKET}"
-    echo ""
-}
-
-step() {
-    local num=$1
-    local total=$2
-    local msg=$3
-    local icon=$4
-    echo ""
-    echo -e "  ${CYAN}${BOLD}[$num/$total]${NC} ${icon}  ${BOLD}${msg}${NC}"
-    echo -e "  ${DIM}$(printf '%.0s─' {1..52})${NC}"
-}
-
-success() {
-    echo -e "        ${GREEN}${CHECK} $1${NC}"
-}
+...existing code...
 
 warn() {
     echo -e "        ${YELLOW}⚠️  $1${NC}"
@@ -157,12 +125,6 @@ wait_for_port() {
     success "$name is live on port $port  (${waited}s)"
 }
 
-<<<<<<< HEAD
-wait_for_backend() {
-    local port=${1:-8000}
-    local max_wait=${2:-300}
-    local waited=0
-=======
 sync_backend_env() {
     if [ ! -f "$APP_ENV_FILE" ]; then
         warn "Missing $APP_ENV_FILE, keeping existing backend .env"
@@ -220,7 +182,7 @@ start_cloudflared_local() {
 }
 
 # ── Cleanup on exit ───────────────────────────────────────────────
->>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
+...existing code...
 
     while [ $waited -lt $max_wait ]; do
         if ss -tlnH 2>/dev/null | grep -q ":${port} "; then

@@ -1,12 +1,6 @@
-<<<<<<< HEAD
-# Development hybrid infrastructure
-# Docker: pgvector + qdrant + nginx + cloudflared
-# Local: FastAPI + Vite frontend
-=======
 # Development infrastructure (hybrid mode)
 # Docker: pgvector + qdrant + nginx (optional cloudflared profile)
 # Local:  FastAPI + Vite for fast iteration
->>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 
 services:
   # PostgreSQL (PGvector)
@@ -22,12 +16,8 @@ services:
           memory: 512M
     ports:
       - "5434:5432"
-    volumes:
-<<<<<<< HEAD
-      - "pgvector:/var/lib/postgresql/data"
-=======
+        volumes:
       - "${PGVECTOR_DEV_DATA_DIR:-/srv/mergerfs/2TB/fehres_db_dev}:/var/lib/postgresql/data"
->>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
     env_file:
       - ./env/.env.postgres
     networks:
@@ -55,57 +45,7 @@ services:
       - "6333:6333"
       - "6334:6334"
     volumes:
-<<<<<<< HEAD
-      - "qdrant_data:/qdrant/storage"
-    networks:
-      - backend
-    restart: unless-stopped
-
-  # Nginx reverse proxy for hybrid mode
-  nginx:
-    image: nginx:latest
-    container_name: fehres-nginx
-    ulimits:
-      core: 0
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-    ports:
-      - "8888:80"
-    volumes:
-      - ./Nginx/Default.dev.conf:/etc/nginx/conf.d/default.conf:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      - pgvector
-      - qdrant
-    networks:
-      - backend
-    restart: unless-stopped
-
-  # Optional Cloudflare tunnel (requires Docker/env/.env.cloudflared)
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: fehres-cloudflared
-    ulimits:
-      core: 0
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    command: tunnel --no-autoupdate run --token $${TUNNEL_TOKEN}
-    env_file:
-      - ./env/.env.cloudflared
-    depends_on:
-      - nginx
-=======
       - "${QDRANT_DEV_DATA_DIR:-/srv/mergerfs/2TB/fehres_qdrant_dev}:/qdrant/storage"
->>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
     networks:
       - backend
     restart: unless-stopped
@@ -127,7 +67,6 @@ services:
       - backend
     restart: unless-stopped
 
-  # Optional Cloudflare tunnel in docker (manual profile)
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: fehres-cloudflared-dev
@@ -145,10 +84,7 @@ services:
 networks:
   backend:
     driver: bridge
-<<<<<<< HEAD
 
 volumes:
   pgvector:
   qdrant_data:
-=======
->>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
