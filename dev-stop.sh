@@ -19,8 +19,10 @@ STOP="🛑"
 PID_DIR="/tmp/fehres"
 BACKEND_PID="$PID_DIR/backend.pid"
 FRONTEND_PID="$PID_DIR/frontend.pid"
+CLOUDFLARED_PID="$PID_DIR/cloudflared.pid"
 BACKEND_LOG="$PID_DIR/backend.log"
 FRONTEND_LOG="$PID_DIR/frontend.log"
+CLOUDFLARED_LOG="$PID_DIR/cloudflared.log"
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 COMPOSE_DEV="Docker/docker-compose.dev.yml"
 COMPOSE_FULL="Docker/docker-compose.yml"
@@ -69,9 +71,17 @@ echo -e "  ${CYAN}Stopping backend...${NC}"
 kill_pid_file "$BACKEND_PID" "Backend"
 free_port 8000
 
-# 3. Stop Docker infra — kill known containers first (handles zombie docker-proxy)
+# 3. Stop Cloudflare tunnel (local process)
+echo -e "  ${CYAN}Stopping cloudflared tunnel...${NC}"
+kill_pid_file "$CLOUDFLARED_PID" "Cloudflared"
+
+# 4. Stop Docker infra — kill known containers first (handles zombie docker-proxy)
 echo -e "  ${CYAN}Stopping Docker infrastructure...${NC}"
+<<<<<<< HEAD
 OLD_CONTAINERS="fastapi frontend nginx pgvector qdrant prometheus grafana postgres_exporter node_exporter cloudflared fehres-pgvector fehres-qdrant fehres-nginx fehres-cloudflared"
+=======
+OLD_CONTAINERS="fastapi frontend nginx pgvector qdrant prometheus grafana postgres_exporter node_exporter cloudflared fehres-pgvector fehres-qdrant fehres-nginx-dev fehres-cloudflared-dev"
+>>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 for c in $OLD_CONTAINERS; do
     docker stop "$c" 2>/dev/null && docker rm "$c" 2>/dev/null || true
 done
@@ -83,14 +93,19 @@ docker compose -f "$PROJECT_ROOT/$COMPOSE_FULL" down --remove-orphans 2>/dev/nul
     echo -e "    ${GREEN}${CHECK} Full Docker stack stopped${NC}" || \
     echo -e "    ${DIM}No full Docker stack was running${NC}"
 
+<<<<<<< HEAD
 # 4. Cleanup temp files
 rm -f "$BACKEND_LOG" "$FRONTEND_LOG"
 rm -f "$PROJECT_ROOT/backend.pid" "$PROJECT_ROOT/frontend.pid" 2>/dev/null || true
 rm -f "$PROJECT_ROOT/SRC/backend.pid" "$PROJECT_ROOT/SRC/frontend.pid" 2>/dev/null || true
+=======
+# 5. Cleanup temp files
+rm -f "$BACKEND_LOG" "$FRONTEND_LOG" "$CLOUDFLARED_LOG"
+>>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 
 # 5. Check if ports are actually free
 echo ""
-if ss -tlnH 2>/dev/null | grep -qE ':8000 |:5173 '; then
+if ss -tlnH 2>/dev/null | grep -qE ':8000 |:5173 |:8888 '; then
     echo -e "  ${YELLOW}⚠️  Some ports are still occupied (zombie docker-proxy).${NC}"
     echo -e "  ${YELLOW}   Run: ${BOLD}sudo systemctl restart docker${NC}${YELLOW} to clear them.${NC}"
 else

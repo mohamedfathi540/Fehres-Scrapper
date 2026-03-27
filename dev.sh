@@ -32,12 +32,20 @@ SPARKLE="✨"
 PID_DIR="/tmp/fehres"
 BACKEND_PID="$PID_DIR/backend.pid"
 FRONTEND_PID="$PID_DIR/frontend.pid"
+CLOUDFLARED_PID="$PID_DIR/cloudflared.pid"
 BACKEND_LOG="$PID_DIR/backend.log"
 FRONTEND_LOG="$PID_DIR/frontend.log"
+CLOUDFLARED_LOG="$PID_DIR/cloudflared.log"
 COMPOSE_DEV="Docker/docker-compose.dev.yml"
 COMPOSE_FULL="Docker/docker-compose.yml"
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
+<<<<<<< HEAD
 NGINX_PORT=8888
+=======
+APP_ENV_FILE="$PROJECT_ROOT/Docker/env/.env.app"
+BACKEND_ENV_FILE="$PROJECT_ROOT/SRC/.env"
+CLOUDFLARED_ENV_FILE="$PROJECT_ROOT/Docker/env/.env.cloudflared"
+>>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 
 mkdir -p "$PID_DIR"
 
@@ -149,10 +157,70 @@ wait_for_port() {
     success "$name is live on port $port  (${waited}s)"
 }
 
+<<<<<<< HEAD
 wait_for_backend() {
     local port=${1:-8000}
     local max_wait=${2:-300}
     local waited=0
+=======
+sync_backend_env() {
+    if [ ! -f "$APP_ENV_FILE" ]; then
+        warn "Missing $APP_ENV_FILE, keeping existing backend .env"
+        return 0
+    fi
+
+    cp "$APP_ENV_FILE" "$BACKEND_ENV_FILE"
+
+    # Force local backend to use dockerized pgvector host port in hybrid mode.
+    sed -i -E \
+        -e 's/^POSTGRES_HOST\s*=.*/POSTGRES_HOST = "localhost"/' \
+        -e 's/^POSTGRES_HOST=.*/POSTGRES_HOST=localhost/' \
+        -e 's/^POSTGRES_PORT\s*=.*/POSTGRES_PORT = "5434"/' \
+        -e 's/^POSTGRES_PORT=.*/POSTGRES_PORT=5434/' \
+        "$BACKEND_ENV_FILE"
+
+    success "Synced backend env from Docker/env/.env.app -> SRC/.env (localhost:5434)"
+}
+
+start_cloudflared_local() {
+    if [ ! -f "$CLOUDFLARED_ENV_FILE" ]; then
+        info "No Docker/env/.env.cloudflared file found, skipping Cloudflare tunnel"
+        return 0
+    fi
+
+    local token
+    token=$(grep -E '^TUNNEL_TOKEN=' "$CLOUDFLARED_ENV_FILE" | tail -1 | cut -d'=' -f2- | tr -d '"' | xargs)
+
+    if [ -z "$token" ] || [ "$token" = "your-cloudflare-tunnel-token-here" ]; then
+        info "Cloudflare tunnel token is empty, skipping tunnel"
+        return 0
+    fi
+
+    if ! command -v cloudflared >/dev/null 2>&1; then
+        warn "cloudflared is not installed, skipping tunnel startup"
+        echo ""
+        echo "        Install with:"
+        echo "        sudo mkdir -p --mode=0755 /usr/share/keyrings"
+        echo "        curl -fsSL https://pkg.cloudflare.com/cloudflare-public-v2.gpg | sudo tee /usr/share/keyrings/cloudflare-public-v2.gpg >/dev/null"
+        echo "        echo 'deb [signed-by=/usr/share/keyrings/cloudflare-public-v2.gpg] https://pkg.cloudflare.com/cloudflared any main' | sudo tee /etc/apt/sources.list.d/cloudflared.list"
+        echo "        sudo apt-get update && sudo apt-get install cloudflared"
+        return 0
+    fi
+
+    info "Starting local Cloudflare tunnel..."
+    cloudflared tunnel run --token "$token" > "$CLOUDFLARED_LOG" 2>&1 &
+    echo $! > "$CLOUDFLARED_PID"
+    sleep 2
+
+    if kill -0 "$(cat "$CLOUDFLARED_PID" 2>/dev/null)" 2>/dev/null; then
+        success "Cloudflare tunnel started (local process)"
+    else
+        warn "Cloudflare tunnel failed to start; check $CLOUDFLARED_LOG"
+    fi
+}
+
+# ── Cleanup on exit ───────────────────────────────────────────────
+>>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 
     while [ $waited -lt $max_wait ]; do
         if ss -tlnH 2>/dev/null | grep -q ":${port} "; then
@@ -191,6 +259,14 @@ cleanup() {
     free_port 5173 2>/dev/null || true
     info "Frontend stopped"
 
+<<<<<<< HEAD
+=======
+    # Kill Cloudflare tunnel (local process)
+    kill_pid_file "$CLOUDFLARED_PID"
+    info "Cloudflare tunnel stopped"
+
+    # Kill backend
+>>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
     kill_pid_file "$BACKEND_PID"
     free_port 8000 2>/dev/null || true
     info "Backend stopped"
@@ -212,14 +288,23 @@ trap cleanup SIGINT SIGTERM
 
 print_banner
 
+<<<<<<< HEAD
+=======
+# ── STEP 0: Clean up everything ───────────────────────────────────
+>>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 step 0 4 "Preparing environment" "$GEAR"
 
 kill_pid_file "$BACKEND_PID"
 kill_pid_file "$FRONTEND_PID"
+kill_pid_file "$CLOUDFLARED_PID"
 
 # FIXED: Removed generic "pgvector", "qdrant", "nginx" so it doesn't kill RxTract
 info "Stopping any existing Docker services..."
+<<<<<<< HEAD
 OLD_CONTAINERS="fehres-pgvector fehres-qdrant fehres-nginx fehres-cloudflared"
+=======
+OLD_CONTAINERS="fastapi frontend nginx pgvector qdrant prometheus grafana postgres_exporter node_exporter cloudflared fehres-pgvector fehres-qdrant fehres-nginx-dev fehres-cloudflared-dev"
+>>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 for c in $OLD_CONTAINERS; do
     docker stop "$c" 2>/dev/null && docker rm "$c" 2>/dev/null || true
 done
@@ -230,13 +315,18 @@ docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" down --remove-orphans 2>/dev/null
 # FIXED: Swapped 8000 for 8000
 free_port 8000
 free_port 5173
+<<<<<<< HEAD
 free_port "$NGINX_PORT"
+=======
+free_port 8888
+>>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 
 sleep 1
 
 # FIXED: Swapped 8000 for 8000
 require_port_free 8000 "FastAPI backend"
 require_port_free 5173 "Vite frontend"
+<<<<<<< HEAD
 require_port_free "$NGINX_PORT" "Nginx reverse proxy"
 
 success "Environment is clean"
@@ -245,6 +335,17 @@ step 1 4 "Starting hybrid Docker services" "$DB"
 
 info "Starting pgvector + Qdrant + Nginx (+ Cloudflare if configured) via Docker..."
 docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" up -d 2>&1 | tail -8
+=======
+require_port_free 8888 "Nginx reverse proxy"
+
+success "Environment is clean"
+
+# ── STEP 1: Docker infrastructure ─────────────────────────────────
+step 1 4 "Starting hybrid Docker infrastructure" "$DB"
+
+info "Starting pgvector + Qdrant + Nginx via Docker..."
+docker compose -f "$PROJECT_ROOT/$COMPOSE_DEV" up -d pgvector qdrant nginx 2>&1 | tail -10
+>>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 
 info "Waiting for PostgreSQL to accept connections..."
 PG_WAIT_TIMEOUT=${PG_WAIT_TIMEOUT:-180}
@@ -280,6 +381,7 @@ else
     warn "Qdrant may not be fully ready yet"
 fi
 
+<<<<<<< HEAD
 nginx_waited=0
 nginx_code="000"
 while [ $nginx_waited -lt 30 ]; do
@@ -297,14 +399,25 @@ else
     exit 1
 fi
 
+=======
+wait_for_port 8888 "Nginx reverse proxy" 30 || true
+
+# ── STEP 3: Backend ───────────────────────────────────────────────
+>>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 step 2 4 "Starting FastAPI backend" "$BOLT"
 
 cd "$PROJECT_ROOT/SRC"
 
+<<<<<<< HEAD
 # FIXED: Switched kill target to port 8000
 pkill -f "uvicorn main:app --host 0.0.0.0 --port 8000" 2>/dev/null || true
 sleep 0.5
 
+=======
+sync_backend_env
+
+# Ensure deps
+>>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 info "Syncing Python dependencies with uv..."
 uv sync --quiet 2>&1 || true
 
@@ -327,6 +440,10 @@ fi
 
 cd "$PROJECT_ROOT"
 
+<<<<<<< HEAD
+=======
+# ── STEP 4: Frontend ──────────────────────────────────────────────
+>>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 step 3 4 "Starting Vite frontend" "$GLOBE"
 
 cd "$PROJECT_ROOT/frontend"
@@ -348,12 +465,17 @@ fi
 
 cd "$PROJECT_ROOT"
 
+# ── STEP 5: Optional Cloudflare tunnel ───────────────────────────
+step 4 4 "Starting Cloudflare tunnel (optional)" "$GLOBE"
+start_cloudflared_local
+
 # ══════════════════════════════════════════════════════════════════
 #                     DASHBOARD & DETACH
 # ══════════════════════════════════════════════════════════════════
 
 echo ""
 echo -e "  ${GREEN}${BOLD}"
+<<<<<<< HEAD
 echo "  ╔═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗"
 echo -e "  ║              ${SPARKLE}  ${NC}${GREEN}${BOLD}Fehres is LIVE${NC}${GREEN}${BOLD}  ${SPARKLE}                                                                                     ║"
 echo "  ╠═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╣"
@@ -365,6 +487,21 @@ echo -e "  ║  ${NC}${CYAN} Postgres  ${NC}${GREEN}→${NC}  ${BOLD}localhost:5
 echo -e "  ║  ${NC}${CYAN} Qdrant    ${NC}${GREEN}→${NC}  ${BOLD}localhost:6333${NC}                      ${GREEN}               ║"
 echo -e "  ║                                                                                                                       ║"
 echo -e "  ${GREEN}╚══════════════════════════════════════════════════════════════════════════════════════════════════════════╝${NC}"
+=======
+echo "  ╔══════════════════════════════════════════════════════════╗"
+echo -e "  ║              ${SPARKLE}  ${NC}${GREEN}${BOLD}Fehres is LIVE${NC}${GREEN}${BOLD}  ${SPARKLE}                        ║"
+echo "  ╠══════════════════════════════════════════════════════════╣"
+echo -e "  ║                                                          ║"
+echo -e "  ║  ${NC}${CYAN} Frontend  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:5173${NC}               ${GREEN}   ║"
+echo -e "  ║  ${NC}${CYAN} Nginx App  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:8888${NC}               ${GREEN}   ║"
+echo -e "  ║  ${NC}${CYAN} API Docs  ${NC}${GREEN}→${NC}  ${BOLD}http://localhost:8000/docs${NC}          ${GREEN}   ║"
+echo -e "  ║  ${NC}${CYAN} Postgres  ${NC}${GREEN}→${NC}  ${BOLD}localhost:5434${NC}                      ${GREEN}   ║"
+echo -e "  ║  ${NC}${CYAN} Qdrant    ${NC}${GREEN}→${NC}  ${BOLD}localhost:6333${NC}                      ${GREEN}   ║"
+echo -e "  ║                                                          ║"
+echo -e "  ${GREEN}╚══════════════════════════════════════════════════════════╝${NC}"
+echo ""
+echo -e "  ${DIM}Press ${BOLD}Ctrl+C${NC}${DIM} to stop all services${NC}"
+>>>>>>> cf604b2 (feat: add Nginx reverse proxy configuration and Cloudflare tunnel support in Docker setup)
 echo ""
 
 echo -e "  ${DIM}Running in detached mode. Logs: ${BOLD}$BACKEND_LOG${NC} ${DIM}and${NC} ${BOLD}$FRONTEND_LOG${NC}"
