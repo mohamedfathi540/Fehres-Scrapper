@@ -16,7 +16,7 @@ services:
           memory: 512M
     ports:
       - "5434:5432"
-        volumes:
+    volumes:
       - "${PGVECTOR_DEV_DATA_DIR:-/srv/mergerfs/2TB/fehres_db_dev}:/var/lib/postgresql/data"
     env_file:
       - ./env/.env.postgres
