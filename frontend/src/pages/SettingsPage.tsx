@@ -8,8 +8,6 @@ import { Button } from "../components/ui/Button";
 
 export function SettingsPage() {
   const {
-    theme,
-    toggleTheme,
     clearHistory,
   } = useSettingsStore();
 
@@ -44,26 +42,6 @@ export function SettingsPage() {
           Configure your Fehres application
         </p>
       </div>
-
-      {/* Appearance */}
-      <Card title="Appearance">
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="text-text-primary font-medium">Dark Mode</h4>
-            <p className="text-sm text-text-muted">Toggle dark/light theme</p>
-          </div>
-          <button
-            onClick={toggleTheme}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${theme === "dark" ? "bg-primary-600" : "bg-bg-hover"
-              }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${theme === "dark" ? "translate-x-6" : "translate-x-1"
-                }`}
-            />
-          </button>
-        </div>
-      </Card>
 
       {/* Data Management */}
       <Card title="Data Management">
