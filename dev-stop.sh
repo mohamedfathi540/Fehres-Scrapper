@@ -30,7 +30,7 @@ COMPOSE_FULL="Docker/docker-compose.yml"
 echo ""
 echo -e "  ${YELLOW}${BOLD}"
 echo "  ╔══════════════════════════════════════════════╗"
-echo "  ║         ${STOP}  Stopping Fehres Dev Env           ║"
+echo "  ║       ${STOP}  Stopping Fehres Dev Env        ║"
 echo "  ╚══════════════════════════════════════════════╝"
 echo -e "  ${NC}"
 
