@@ -18,15 +18,15 @@ NC='\033[0m'
 
 export COMPOSE_PROJECT_NAME=fehres
 
-CHECK="✅"
-ROCKET="🚀"
-FIRE="🔥"
-BOLT="⚡"
-DB="🗄️"
-GLOBE="🌐"
-STOP="🛑"
-GEAR="⚙️"
-SPARKLE="✨"
+CHECK="[OK]"
+ROCKET="[START]"
+FIRE="[HOT]"
+BOLT="[FAST]"
+DB="[DB]"
+GLOBE="[WEB]"
+STOP="[STOP]"
+GEAR="[SYS]"
+SPARKLE="[READY]"
 
 # ── PID / Log Files ───────────────────────────────────────────────
 PID_DIR="/tmp/fehres"
@@ -75,7 +75,7 @@ success() {
 }
 
 warn() {
-    echo -e "        ${YELLOW}⚠️  $1${NC}"
+    echo -e "        ${YELLOW}[WARN]  $1${NC}"
 }
 
 info() {
@@ -83,7 +83,7 @@ info() {
 }
 
 err() {
-    echo -e "        ${RED}✖  $1${NC}"
+    echo -e "        ${RED}[ERR]  $1${NC}"
 }
 
 kill_pid_file() {
@@ -153,12 +153,14 @@ wait_for_port() {
 }
 
 sync_backend_env() {
-    if [ ! -f "$APP_ENV_FILE" ]; then
-        warn "Missing $APP_ENV_FILE, keeping existing backend .env"
-        return 0
+    if [ ! -f "$BACKEND_ENV_FILE" ]; then
+        if [ ! -f "$APP_ENV_FILE" ]; then
+            warn "Missing $APP_ENV_FILE, keeping existing backend .env"
+            return 0
+        fi
+        cp "$APP_ENV_FILE" "$BACKEND_ENV_FILE"
+        info "Initialized backend env from Docker/env/.env.app -> SRC/.env"
     fi
-
-    cp "$APP_ENV_FILE" "$BACKEND_ENV_FILE"
 
     # Force local backend to use dockerized pgvector host port in hybrid mode.
     sed -i -E \
@@ -168,7 +170,7 @@ sync_backend_env() {
         -e 's/^POSTGRES_PORT=.*/POSTGRES_PORT=5434/' \
         "$BACKEND_ENV_FILE"
 
-    success "Synced backend env from Docker/env/.env.app -> SRC/.env (localhost:5434)"
+    success "Ensured backend env mapped pgvector to localhost:5434"
 }
 
 start_cloudflared_local() {
@@ -456,5 +458,5 @@ echo ""
 disown -a 2>/dev/null || true
 trap - SIGINT SIGTERM
 
-echo -e "${GREEN}${BOLD}  ✅ Setup complete. You can safely close this terminal. ✨${NC}\n"
+echo -e "${GREEN}${BOLD}  [OK] Setup complete. You can safely close this terminal. [READY]${NC}\n"
 exit 0

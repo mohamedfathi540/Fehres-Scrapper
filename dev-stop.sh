@@ -13,8 +13,8 @@ BOLD='\033[1m'
 DIM='\033[2m'
 NC='\033[0m'
 
-CHECK="✅"
-STOP="🛑"
+CHECK="[OK]"
+STOP="[STOP]"
 
 PID_DIR="/tmp/fehres"
 BACKEND_PID="$PID_DIR/backend.pid"
@@ -94,7 +94,7 @@ rm -f "$BACKEND_LOG" "$FRONTEND_LOG" "$CLOUDFLARED_LOG"
 rm -f "$PROJECT_ROOT/backend.pid" "$PROJECT_ROOT/frontend.pid" 2>/dev/null || true
 rm -f "$PROJECT_ROOT/SRC/backend.pid" "$PROJECT_ROOT/SRC/frontend.pid" 2>/dev/null || true
 if ss -tlnH 2>/dev/null | grep -qE ':8000 |:5173 |:8888 '; then
-    echo -e "  ${YELLOW}⚠️  Some ports are still occupied (zombie docker-proxy).${NC}"
+    echo -e "  ${YELLOW}[WARN]  Some ports are still occupied (zombie docker-proxy).${NC}"
     echo -e "  ${YELLOW}   Run: ${BOLD}sudo systemctl restart docker${NC}${YELLOW} to clear them.${NC}"
 else
     echo -e "  ${GREEN}${BOLD}${CHECK} All ports are free.${NC}"

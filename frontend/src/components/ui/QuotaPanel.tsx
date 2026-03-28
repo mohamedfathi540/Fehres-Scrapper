@@ -42,7 +42,7 @@ function Bar({ label, used, limit, icon }: BarProps) {
         </span>
       </div>
       {!isUnlimited && (
-        <div className="h-2 w-full bg-bg-tertiary rounded-full overflow-hidden shadow-inner border border-border/50 relative">
+        <div className="h-2 w-full bg-bg-tertiary rounded-full overflow-hidden shadow-inner relative">
           <div
             className={`absolute top-0 left-0 h-full rounded-full transition-all duration-1000 ease-in-out ${barColor} ${
               isExhausted ? "animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" : ""
@@ -70,10 +70,6 @@ export function QuotaPanel() {
 
   return (
     <div className="px-3 py-3 rounded-lg bg-bg-primary border border-border space-y-3 shadow-sm relative overflow-hidden">
-      {/* Decorative icon background */}
-      <div className="absolute -top-2 -right-2 p-1 opacity-[0.03] pointer-events-none">
-        <Zap className="w-20 h-20" />
-      </div>
       
       <div className="flex items-center gap-2 mb-1">
         <Zap className="w-3.5 h-3.5 text-primary-400" />
