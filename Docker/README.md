@@ -56,7 +56,7 @@ The `docker-compose.yml` defines the following services:
 ### Databases
 - **`pgvector`**: PostgreSQL 17 extended with `pgvector` for vector similarity search.
   - **Image**: `pgvector/pgvector:0.8.0-pg17`.
-  - **Port**: `5433` (Host) -> `5432` (Container).
+  - **Port**: `5434` (Host) -> `5432` (Container).
   - **Data Persistence**: Named volume `pgvector`.
   - **Healthcheck**: Checks if Postgres is ready.
 - **`qdrant`**: A high-performance vector database.

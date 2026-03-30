@@ -337,7 +337,7 @@ if [ $pg_waited -ge "$PG_WAIT_TIMEOUT" ] || [ "$pg_health" = "unhealthy" ]; then
     err "PostgreSQL failed to become healthy in ${PG_WAIT_TIMEOUT}s"
     exit 1
 fi
-success "PostgreSQL (pgvector) is ready on :5433  (${pg_waited}s)"
+success "PostgreSQL (pgvector) is ready on :5434  (${pg_waited}s)"
 
 qdrant_waited=0
 while ! curl -sf http://localhost:6333/healthz >/dev/null 2>&1 && [ $qdrant_waited -lt 30 ]; do

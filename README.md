@@ -156,7 +156,7 @@ See [Docker/README.md](Docker/README.md) for detailed Docker configuration and a
 
 If you prefer to run services individually:
 
-#### 1. Databases
+#### 1. Databases & Infrastructure
 
 ```bash
 cd Docker
@@ -165,10 +165,10 @@ docker compose -f docker-compose.dev.yml up -d
 
 Services will be available at:
 
-- **React Frontend**: http://localhost (via Nginx)
+- **App via Nginx**: http://localhost:8888
 - **API**: http://localhost:8000
-- **Grafana**: http://localhost:3000
-- **Prometheus**: http://localhost:9090
+- **PostgreSQL**: localhost:5434
+- **Qdrant**: localhost:6333
 
 See [Docker/README.md](Docker/README.md) for detailed Docker configuration.
 
@@ -427,6 +427,9 @@ See [TESTING.md](TESTING.md) for comprehensive testing documentation.
 
 | Date | Change | Details |
 | --- | --- | --- |
+| 2026-03-27 | **UI Refinements** | Introduced light theme functionality and streamlined the Settings page |
+| 2026-03-27 | **Development Setup** | Enhanced hybrid `dev.sh` script with Nginx reverse proxy, Cloudflare tunnel support, step progress, and banner display |
+| 2026-03-27 | **Database Access** | Updated Alembic PostgreSQL connection port to 5434 in development environment |
 | 2026-02-28 | **Cloudflare Tunnel** | Added `cloudflared` service to Docker Compose for secure public exposure without port forwarding |
 | 2026-02-28 | **Mobile UI** | Enhanced `MainLayout` and `Sidebar` for mobile responsiveness; added minimize functionality to the scrape progress panel |
 | 2026-02-27 | **Multi-job Scraping** | `ScrapeProgressContext` now manages multiple simultaneous scraping jobs with independent progress tracking |

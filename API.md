@@ -2,7 +2,7 @@
 
 This document describes the REST API endpoints available in Fehres.
 
-Base URL: `http://localhost:8000/api/v1`
+Base URL: `http://localhost:8888/api/v1` (via Nginx) or `http://localhost:8000/api/v1` (direct)
 
 ---
 
