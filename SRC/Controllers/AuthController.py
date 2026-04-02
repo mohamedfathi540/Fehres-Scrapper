@@ -44,7 +44,7 @@ class AuthController(basecontroller):
         settings = get_settings()
         to_encode = data.copy()
         from datetime import datetime, timezone
-        expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+        expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=settings.JWT_EXPIRE_MINUTES))
         to_encode.update({"exp": expire})
         return jwt.encode(to_encode, settings.JWT_SECRET or "change-me-in-production", algorithm="HS256")
 
