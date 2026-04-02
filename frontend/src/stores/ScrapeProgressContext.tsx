@@ -82,8 +82,17 @@ export function ScrapeProgressProvider({ children }: { children: React.ReactNode
               queryClient.invalidateQueries({ queryKey: ["libraries"] });
             }
           }
-        } catch {
-          // Backend may not have the entry yet — keep polling
+        } catch (error: any) {
+          // NEW FIX: If the backend returns 404, the job is gone. Stop polling!
+          if (error?.response?.status === 404) {
+            stopPollingUrl(url);
+            setJobs((prev) => {
+              const next = new Map(prev);
+              next.delete(url); // Remove the dead job from the panel and localStorage
+              return next;
+            });
+          }
+          // If it's another error (like network delay), it will just keep polling
         }
       };
 
