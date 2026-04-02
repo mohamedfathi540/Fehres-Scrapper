@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useRef, useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getScrapeProgress, cancelScrapeDocumentation } from "../api/data";
 import { X, ChevronDown, ChevronUp } from "lucide-react";
@@ -91,6 +91,47 @@ export function ScrapeProgressProvider({ children }: { children: React.ReactNode
     },
     [stopPollingUrl, queryClient]
   );
+
+  // ------------------------------------------------------------------
+  // NEW: LocalStorage Persistence Logic
+  // ------------------------------------------------------------------
+  const hasRestored = useRef(false);
+
+  // 1. Restore active jobs and panel state on mount
+  useEffect(() => {
+    if (!hasRestored.current) {
+      // Restore the urls we were scraping
+      const storedJobs = localStorage.getItem("active_scrape_urls");
+      if (storedJobs) {
+        try {
+          const urls: string[] = JSON.parse(storedJobs);
+          urls.forEach((url) => startPolling(url));
+        } catch (e) {
+          console.error("Failed to restore scrape jobs", e);
+        }
+      }
+
+      // Restore if the panel was minimized or expanded
+      const storedMinimized = localStorage.getItem("scrape_panel_minimized");
+      if (storedMinimized !== null) {
+        setIsMinimized(storedMinimized === "true");
+      }
+      
+      hasRestored.current = true;
+    }
+  }, [startPolling]);
+
+  // 2. Save job URLs to localStorage whenever a job is added or removed
+  useEffect(() => {
+    const urls = Array.from(jobs.keys());
+    localStorage.setItem("active_scrape_urls", JSON.stringify(urls));
+  }, [jobs]);
+
+  // 3. Save minimized state to localStorage when toggled
+  useEffect(() => {
+    localStorage.setItem("scrape_panel_minimized", String(isMinimized));
+  }, [isMinimized]);
+  // ------------------------------------------------------------------
 
   const handleCancel = async (url: string) => {
     try {
