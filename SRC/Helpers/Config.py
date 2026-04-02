@@ -94,7 +94,7 @@ class settings (BaseSettings):
 
     # Authentication / JWT
     JWT_SECRET : Optional[str] = None
-    JWT_EXPIRE_MINUTES : int = 60
+    ACCESS_TOKEN_EXPIRE_MINUTES : int = 60
 
     # Email service
     BREVO_API_KEY : Optional[str] = None

@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getScrapeProgress, cancelScrapeDocumentation } from "../api/data";
 import { X, ChevronDown, ChevronUp } from "lucide-react";
 import type { ScrapeProgressResponse, ScrapeProgressStatus } from "../api/types";
+import { useAuthStore } from "./authStore";
 
 // ── Friendly labels for each backend status ──────────────────────────
 const STATUS_LABELS: Record<ScrapeProgressStatus, string> = {
@@ -38,6 +39,7 @@ export function useScrapeProgress() {
 // ── Provider ──────────────────────────────────────────────────────────
 export function ScrapeProgressProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   // Map of url -> JobState for all active/finished scraping jobs
   const [jobs, setJobs] = useState<Map<string, JobState>>(new Map());
@@ -131,6 +133,15 @@ export function ScrapeProgressProvider({ children }: { children: React.ReactNode
   useEffect(() => {
     localStorage.setItem("scrape_panel_minimized", String(isMinimized));
   }, [isMinimized]);
+
+  // 4. Clear all active scraping intervals if the user gets logged out
+  useEffect(() => {
+    if (!isAuthenticated) {
+      pollRefs.current.forEach((id) => clearInterval(id));
+      pollRefs.current.clear();
+      setJobs(new Map()); // Wipes the panel clean so it doesn't show over the login screen
+    }
+  }, [isAuthenticated]);
   // ------------------------------------------------------------------
 
   const handleCancel = async (url: string) => {
