@@ -93,8 +93,10 @@ const createApiClient = (): AxiosInstance => {
                     showToast('Server is temporarily unavailable. Please try again shortly.', 'error');
                 }
 
+                // FIX: Update the message on theoriginal error object instead of creating a new one
                 const errorMessage = extractErrorMessage(error);
-                return Promise.reject(new Error(errorMessage));
+                error.message = errorMessage; 
+                return Promise.reject(error); // Return the original Axios error!
             } else if (error.request) {
                 // Network error — server unreachable
                 showToast('No response from server. Check your connection or try again later.', 'error');
