@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Send, ChevronDown, AlertTriangle, AlertCircle } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { MarkdownMessage } from "../components/ui/MarkdownMessage";
 import { useSettingsStore } from "../stores/settingsStore";
 import { getAnswer } from "../api/nlp";
 import { getLibraries } from "../api/data";
@@ -194,10 +193,8 @@ export function ChatPage() {
 
                   {/* Message Content */}
                   {message.role === "assistant" && !message.metadata?.isError ? (
-                    <div className="chat-markdown text-sm">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {message.content}
-                      </ReactMarkdown>
+                    <div className="chat-markdown">
+                      <MarkdownMessage content={message.content} />
                     </div>
                   ) : (
                     <p className="whitespace-pre-wrap text-sm">{message.content}</p>

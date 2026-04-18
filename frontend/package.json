@@ -12,6 +12,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/react-syntax-highlighter": "^15.5.13",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.38",
@@ -29,6 +30,7 @@
     "react-dom": "^19.0.0",
     "react-markdown": "^9.0.0",
     "react-router-dom": "^6.28.0",
+    "react-syntax-highlighter": "^16.1.1",
     "remark-gfm": "^4.0.0",
     "tailwind-merge": "^2.2.0",
     "zustand": "^4.5.0"
