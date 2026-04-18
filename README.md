@@ -11,6 +11,7 @@ A production-ready Retrieval-Augmented Generation (RAG) system for document-base
 - **Documentation Scraper** — Crawl and index entire documentation sites via URL with sitemap discovery and Playwright-based rendering
 - **Multiple LLM Providers** — OpenAI, Google Gemini, Cohere, HuggingFace, Ollama (fully local)
 - **Vector Database Options** — PostgreSQL with pgvector, Qdrant
+- **RSS-to-Markdown Converter** — Scrape and convert RSS feeds or individual links to downloadable, RAG-ready Markdown files. Built-in support to bypass Ghost and Substack premium content paywalls utilizing specified cookies.
 
 ### Security
 
@@ -209,6 +210,7 @@ The modern React SPA provides an intuitive, mobile-responsive interface for all 
 3. **Upload & Process** — Upload documents, configure chunking, and process files
 4. **Search** — Semantic search across indexed documents
 5. **Index Info** — View vector database statistics
+6. **RSS Converter** — Scrape an RSS feed or webpage directly into downloadable Markdown format. Includes Markdown syntax highlighting for viewing content and copy-code feature.
 
 **Learning Assistant**: A dedicated interface for the AI/Data Science reference corpus. Ask questions about maths, statistics, coding, ML, DL, GenAI, and System Design.
 
@@ -221,6 +223,8 @@ The modern React SPA provides an intuitive, mobile-responsive interface for all 
 5. **Scrape** a documentation site via `POST /api/v1/data/scrape/{project_id}`
 6. **Track progress** via `GET /api/v1/data/scrape-progress?base_url=...`
 7. **Health checks** via `GET /api/v1/health/live` and `GET /api/v1/health/ready`
+8. **Auth & Quota** via `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, and `GET /api/v1/auth/quota-status`
+9. **RSS Scraping** via frontend integration to convert and download Markdown files
 
 
 For full API documentation, see [API.md](API.md).
@@ -427,6 +431,11 @@ See [TESTING.md](TESTING.md) for comprehensive testing documentation.
 
 | Date | Change | Details |
 | --- | --- | --- |
+| 2026-04-18 | **Markdown UI** | Implemented Markdown syntax highlighting using `react-markdown` and `react-syntax-highlighter` in the Chat UI |
+| 2026-04-16 | **Substack & Ghost Scraper** | Integrated configuration for Substack and Ghost authentication cookies to bypass paywalls during RSS scraping |
+| 2026-04-16 | **RSS Converter** | Implemented full stack RSS-to-Markdown extractor and file downloader capabilities |
+| 2026-04-14 | **Google ADK & Agents** | Upgraded to RxTract multi-agent pipeline leveraging Google ADK and integrated local Llama 3 / Ollama backend |
+| 2026-04-14 | **User Quota System** | Added quota tracking and status endpoint (`/api/v1/auth/quota-status`) to monitor usage |
 | 2026-03-27 | **UI Refinements** | Introduced light theme functionality and streamlined the Settings page |
 | 2026-03-27 | **Development Setup** | Enhanced hybrid `dev.sh` script with Nginx reverse proxy, Cloudflare tunnel support, step progress, and banner display |
 | 2026-03-27 | **Database Access** | Updated Alembic PostgreSQL connection port to 5434 in development environment |

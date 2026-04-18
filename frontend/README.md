@@ -4,8 +4,10 @@ A modern, accessible, and mobile-responsive React SPA for the Fehres RAG (Retrie
 
 ## Features
 
-- **Chat Interface** — RAG Q&A with AI-generated answers
+- **Chat Interface** — RAG Q&A with AI-generated answers and Markdown syntax highlighting for VS Code-like reading experience
 - **Library Docs** — Scrape entire documentation sites by URL with real-time progress tracking (multi-job support)
+- **RSS Converter** — Dedicated RSS-to-Markdown scraper for generating RAG-ready content offline (supports Substack/Ghost bypass via backend)
+- **User Authentication** — Seamless integration with backend quota system (`/api/v1/auth/quota-status`)
 - **Upload & Process** — File upload, chunking, and indexing workflow
 - **Semantic Search** — Natural language search on indexed documents
 - **Index Info** — Vector database statistics dashboard
@@ -84,7 +86,7 @@ frontend/
 │   │   ├── ui/       # Base UI components
 │   │   └── layout/   # Layout components (MainLayout, Sidebar — mobile-responsive)
 │   ├── pages/        # Page components
-│   │   ├── ChatPage.tsx
+│   │   ├── ChatPage.tsx          # With full Markdown syntax highlighting enabled
 │   │   ├── LibraryDocsPage.tsx   # Documentation scraper with progress UI
 │   │   ├── SearchPage.tsx
 │   │   └── IndexInfoPage.tsx
@@ -105,6 +107,9 @@ Available endpoints:
 | Method | Endpoint | Description |
 | --- | --- | --- |
 | `GET` | `/` | Health check |
+| `POST` | `/auth/register` | Register user account |
+| `POST` | `/auth/login` | Login and get JWT token |
+| `GET` | `/auth/quota-status` | Get today's usage quota limit details |
 | `POST` | `/data/upload/{project_id}` | Upload files |
 | `POST` | `/data/process/{project_id}` | Process files into chunks |
 | `POST` | `/data/scrape` | Scrape a documentation site (background) |

@@ -94,7 +94,7 @@ Environment variables are loaded from the `env/` directory. **Example files are 
 
 | Example File | Copy To | Purpose |
 | --- | --- | --- |
-| `.env.app.example` | `.env.app` | FastAPI application settings (LLM keys, DB connection, scraping config, timeouts, etc.) |
+| `.env.app.example` | `.env.app` | FastAPI application settings (LLM keys, DB connection, scraping config, timeouts, Substack/Ghost auth cookies, etc.) |
 | `.env.postgres.example` | `.env.postgres` | PostgreSQL credentials (user, password, db) |
 | `.env.grafana.example` | `.env.grafana` | Grafana admin credentials |
 | `.env.postgres-exporter.example` | `.env.postgres-exporter` | Postgres exporter credentials (must match `.env.postgres`) |

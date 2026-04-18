@@ -9,6 +9,7 @@ Base URL: `http://localhost:8888/api/v1` (via Nginx) or `http://localhost:8000/a
 ## Table of Contents
 
 - [Health Checks](#health-checks)
+- [Authentication & Quota](#authentication--quota)
 - [Data Management](#data-management)
 - [Documentation Scraping](#documentation-scraping)
 - [NLP and Vector Search](#nlp-and-vector-search)
@@ -87,6 +88,80 @@ Readiness probe — verifies all critical dependencies are reachable. Returns 20
     "vectordb": { "status": "error", "detail": "Connection refused" },
     "llm_generation": { "status": "ok" },
     "llm_embedding": { "status": "unavailable", "detail": "embedding_client not initialised" }
+  }
+}
+```
+
+---
+
+## Authentication & Quota
+
+### POST /auth/register
+
+Register a new user account.
+
+**Request Body**
+
+```json
+{
+  "email": "user@example.com",
+  "password": "securepassword123"
+}
+```
+
+**Response**
+
+```json
+{
+  "signal": "User registered successfully",
+  "user": {
+    "email": "user@example.com",
+    "id": 1
+  }
+}
+```
+
+---
+
+### POST /auth/login
+
+Authenticate user and receive a JWT token.
+
+**Request Body**
+
+```json
+{
+  "email": "user@example.com",
+  "password": "securepassword123"
+}
+```
+
+**Response**
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1...",
+  "token_type": "bearer"
+}
+```
+
+---
+
+### GET /auth/quota-status
+
+Get today's usage quota information for the authenticated user, indicating remaining requests and limits.
+
+**Response**
+
+```json
+{
+  "queries": {
+    "used": 15,
+    "limit": 100
+  },
+  "scrapes": {
+    "used": 2,
+    "limit": 10
   }
 }
 ```

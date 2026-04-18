@@ -22,6 +22,7 @@ graph TD
     subgraph "Frontend Layer"
         UI[React UI]:::frontend
         UploadPage[Upload Page]:::frontend
+        LibraryDocsPage[Library/RSS Page]:::frontend
         ChatPage[Chat Interface]:::frontend
     end
 
@@ -45,6 +46,11 @@ graph TD
     User -->|1. Upload Document| UploadPage
     UploadPage -->|POST /data/upload| API
     API -->|Save File| DocStore
+
+    User -->|1b. Submit RSS / URL| LibraryDocsPage
+    LibraryDocsPage -->|POST /data/scrape| API
+    API -->|Crawl & Bypass Paywalls| External
+    API -->|Save Scraped Content| DocStore
     
     User -->|2. Process & Index| UploadPage
     UploadPage -->|POST /data/process| API
@@ -74,9 +80,9 @@ graph TD
 
 This process prepares the user's data for retrieval.
 
-1.  **Upload**: User uploads a file (PDF, TXT, etc.).
-    *   Endpoint: `POST /data/upload/{project_id}`
-    *   Actions: File is validated and saved to the server's storage.
+1.  **Ingestion Options**: User uploads a file (PDF, TXT, etc.) or submits an RSS feed / URL.
+    *   Endpoint: `POST /data/upload/{project_id}` / `POST /api/v1/data/scrape`
+    *   Actions: File is validated and saved to the server's storage, or URL is crawled (with Ghost/Substack paywall bypass support) and saved as Markdown.
 2.  **Process**: The system breaks the document into smaller chunks.
     *   Endpoint: `POST /data/process/{project_id}`
     *   Parameters: `chunk_size` (default: 100), `overlap_size` (default: 20).
@@ -104,3 +110,5 @@ This is the "Final Result" delivery to the user.
 
 *   **Learning Assistant**: A specialized view leveraging the RAG pipeline for a specific educational corpus.
 *   **Learning Books Admin**: Management interface for the educational corpus assets.
+*   **RSS & Authenticated Docs Scraper**: Advanced background crawler handling multi-page documentation, RSS-to-Markdown conversion, and Ghost/Substack cookie authentication.
+*   **Google ADK Multi-Agent Pipeline**: Specialized RxTract extraction using coordinated AI agents (Transcriber, Extractor, Matcher, QA) backed by local Ollama execution or remote LLMs to validate RAG content seamlessly.
