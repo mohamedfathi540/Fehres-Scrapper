@@ -436,7 +436,8 @@ See [TESTING.md](TESTING.md) for comprehensive testing documentation.
 | 2026-04-16 | **RSS Converter** | Implemented full stack RSS-to-Markdown extractor and file downloader capabilities |
 | 2026-04-14 | **Google ADK & Agents** | Upgraded to RxTract multi-agent pipeline leveraging Google ADK and integrated local Llama 3 / Ollama backend |
 | 2026-04-14 | **User Quota System** | Added quota tracking and status endpoint (`/api/v1/auth/quota-status`) to monitor usage |
-| 2026-03-27 | **UI Refinements** | Introduced light theme functionality and streamlined the Settings page |
+| 2026-04-02 | **Scraping State Persistence** | Persisted active scrape jobs and panel state to `localStorage` and refined 404 error handling |
+| 2026-03-27 | **UI Refinements** | Streamlined the Settings page by removing theme toggle and API configuration for a cleaner layout |
 | 2026-03-27 | **Development Setup** | Enhanced hybrid `dev.sh` script with Nginx reverse proxy, Cloudflare tunnel support, step progress, and banner display |
 | 2026-03-27 | **Database Access** | Updated Alembic PostgreSQL connection port to 5434 in development environment |
 | 2026-02-28 | **Cloudflare Tunnel** | Added `cloudflared` service to Docker Compose for secure public exposure without port forwarding |

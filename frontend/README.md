@@ -11,6 +11,7 @@ A modern, accessible, and mobile-responsive React SPA for the Fehres RAG (Retrie
 - **Upload & Process** — File upload, chunking, and indexing workflow
 - **Semantic Search** — Natural language search on indexed documents
 - **Index Info** — Vector database statistics dashboard
+- **State Persistence** — Active scrape jobs and panel state are automatically persisted to `localStorage`
 - **Mobile Responsive** — Collapsible sidebar and minimizable progress panels for mobile devices
 
 ## Tech Stack
