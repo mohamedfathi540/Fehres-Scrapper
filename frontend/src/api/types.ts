@@ -141,6 +141,8 @@ export interface ChatMessage {
         chatHistory?: unknown[];
         isError?: boolean;
         isQuotaError?: boolean;
+        steps?: import('./agent.types').AgentStep[];
+        sources?: string[];
     };
 }
 

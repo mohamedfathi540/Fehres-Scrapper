@@ -17,7 +17,7 @@ const colorMap: Record<ToastType, string> = {
 };
 
 function ToastItem({ id, message, type, duration }: { id: string; message: string; type: ToastType; duration: number }) {
-    const timerRef = useRef<ReturnType<typeof setTimeout>>();
+    const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const Icon = iconMap[type];
 
     useEffect(() => {
