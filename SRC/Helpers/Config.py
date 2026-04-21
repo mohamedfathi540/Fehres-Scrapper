@@ -109,7 +109,14 @@ class settings (BaseSettings):
     QUOTA_DAILY_QUERIES : int = 0
     QUOTA_DAILY_SCRAPES : int = 0
 
-    @field_validator("SCRAPING_DEBUG", "SCRAPING_USE_BROWSER", "SCRAPING_IGNORE_ROBOTS", "SCRAPING_AUTO_INDEX", mode="before")
+    # ── Agent Configuration ───────────────────────────────────────────────────
+    AGENT_MAX_STEPS           : int   = 8
+    AGENT_TEMPERATURE         : float = 0.2
+    AGENT_MAX_PROMPT_CHARS    : int   = 100_000
+    AGENT_DEFAULT_SEARCH_LIMIT: int   = 5
+    AGENT_ENABLED             : bool  = True
+
+    @field_validator("SCRAPING_DEBUG", "SCRAPING_USE_BROWSER", "SCRAPING_IGNORE_ROBOTS", "SCRAPING_AUTO_INDEX", "AGENT_ENABLED", mode="before")
     @classmethod
     def parse_scraping_bool(cls, v):
         return _env_bool(v) if v is not None else False

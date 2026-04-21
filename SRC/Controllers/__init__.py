@@ -4,3 +4,4 @@ from .ProcessController import processcontroller
 from .NLPController import NLPController
 from .ScrapingController import ScrapingController
 from .AuthController import AuthController
+from .AgentController import AgentController

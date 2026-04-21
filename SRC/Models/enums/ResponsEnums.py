@@ -23,4 +23,7 @@ class ResponseSignal (Enum) :
     SEARCH_INDEX_DONE = "Search index done"
     SEARCH_INDEX_NOT_FOUND = "Search index not found"
     ANSWER_INDEX_ERROR = "Answer index error"
-    ANSWER_INDEX_DONE = "Answer index done"
+    ANSWER_INDEX_DONE  = "Answer index done"
+    AGENT_RUN_DONE     = "Agent run completed"
+    AGENT_DISABLED     = "Agent feature is disabled"
+    AGENT_ERROR        = "Agent run failed"

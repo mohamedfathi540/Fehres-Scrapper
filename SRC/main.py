@@ -4,6 +4,7 @@ from Routes import Data
 from Routes import NLP
 from Routes import Health
 from Routes import Auth
+from Routes import Agent
 from Helpers.Config import get_settings
 from Stores.LLM.LLMProviderFactory import LLMProviderFactory
 from Stores.VectorDB.VectorDBProviderFactory import VectorDBProviderFactory
@@ -100,3 +101,4 @@ app.include_router(Health.health_router)
 # Protected routes (JWT auth required)
 app.include_router(Data.data_router, dependencies=[Depends(get_current_user)])
 app.include_router(NLP.nlp_router, dependencies=[Depends(get_current_user)])
+app.include_router(Agent.agent_router, dependencies=[Depends(get_current_user)])
