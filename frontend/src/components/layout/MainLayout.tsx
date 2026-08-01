@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import { Menu, Workflow } from "lucide-react";
+import { Menu, Library } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 
 export function MainLayout() {
@@ -29,7 +29,7 @@ export function MainLayout() {
             <Menu className="w-6 h-6" />
           </button>
           <div className="p-1 bg-primary-600 rounded-lg">
-            <Workflow className="w-4 h-4 text-white" />
+            <Library className="w-4 h-4 text-white" />
           </div>
           <h1 className="text-lg font-semibold text-white">Fehres</h1>
           <span className="text-xs text-text-muted">RAG System</span>

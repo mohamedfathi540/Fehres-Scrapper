@@ -7,7 +7,7 @@ import {
   Search,
   Settings,
   X,
-  Workflow,
+  Library,
   LogOut,
 } from "lucide-react";
 import { useSettingsStore } from "../../stores/settingsStore";
@@ -64,7 +64,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       <div className="p-5 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-1.5 bg-primary-600 rounded-lg">
-            <Workflow className="w-5 h-5 text-white" />
+            <Library className="w-5 h-5 text-white" />
           </div>
           <div>
             <h1 className="text-xl font-semibold tracking-tight text-white">
