@@ -90,9 +90,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             to={item.href}
             onClick={onClose}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-150 ${
-                isActive ?
-                  "bg-primary-600 text-white"
+              `flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-150 ${isActive ?
+                "bg-primary-600 text-white"
                 : "text-text-secondary hover:bg-bg-hover hover:text-text-primary"
               }`
             }
